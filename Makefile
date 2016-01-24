@@ -30,6 +30,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
+  # This is turned off as a workaround of a gcc 5.3.0 bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65380)
   USE_LTO = no
 endif
 
@@ -79,25 +80,41 @@ endif
 
 # Define project name here
 PROJECT = deadlock-reader
+BOARD   = reader-revA
+
+ifeq ($(BOARD),reader-revA)
+    BOARD_FOLDER = boards/reader-revA
+    # TODO
+    # reader-revA board actually shoud have STM32F052 MCU, this is for development and
+    # not final!
+    LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
+endif
+
+ifeq ($(BOARD),reader-plus-revA)
+    BOARD_FOLDER =
+    $(error Reader Plus revA board is not yes supported!)
+    LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
+endif
+
+ifndef BOARD_FOLDER
+    $(error Incorrect board specified, fix the BOARD value!)
+endif
+
 
 # Imported source files and paths
 CHIBIOS = ../ChibiOS
-BOARD   = boards/reader-revA
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F0xx/platform.mk
-include $(BOARD)/board.mk
+include $(BOARD_FOLDER)/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v6m.mk
 # Other files (optional).
 include $(CHIBIOS)/test/rt/test.mk
-
-# Define linker script file here
-LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

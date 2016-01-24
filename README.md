@@ -13,13 +13,15 @@ This firmware is based on the ChibiOS (http://www.chibios.org/).
 To compile this firmware:
   - Install the appropriate arm toolchain, see ChibiOS documentaion for the
     list of supported compilers.
-    - This project is tested on the GNU Compiler Collection `arm-none-eabi-` toolchain (ARM EABI, bare-metal). If you choose this toolchain, you will need
+    - This project is tested on the GNU Compiler Collection `arm-none-eabi-` toolchain (ARM EABI, bare-metal). If you choose this toolchain, you will need:
       - `arm-none-eabi-gcc` (tested on gcc version 5.3.0 (Arch Repository))
       - `arm-none-eabi-binutils` (tested on 2.25.1)
       - `arm-none-eabi-newlib` (tested on 2.3.0.20160104)
-  - Download and extract the ChibiOS
+  - Download and extract the ChibiOS.
     - The project is tested on ChibiOS 16.1.2 and may not work on other versions.
-  - Edit the `Makefile`, set `CHIBIOS = ` variable to point to the extracted ChibiOS
+  - Edit the `Makefile`:
+    - set `CHIBIOS = ` variable to point to the extracted ChibiOS.
+    - set `BOARD = ` variable to the name of the board you want to compile this firmware for.
   - `make` the project.
 
 ## Flashing the firmware
