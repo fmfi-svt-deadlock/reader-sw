@@ -1,3 +1,7 @@
+# ChibiOS build files
+.dep/
+build/
+
 # Object files
 *.o
 *.ko
