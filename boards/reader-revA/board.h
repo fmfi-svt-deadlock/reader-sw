@@ -24,8 +24,8 @@
 /*
  * Board identifier.
  */
-#define BOARD_ST_STM32F072B_DISCOVERY
-#define BOARD_NAME                  "ST STM32F072B-Discovery"
+#define BOARD_SVT_DEADLOCK_READER_REVA
+#define BOARD_NAME                  "SVT Deadlock Reader revA"
 
 /*
  * Board oscillators-related settings.
@@ -205,22 +205,7 @@
 /*
  * GPIOA setup:
  *
- * PA0  - BUTTON                    (input floating).
- * PA1  - PIN1                      (input pullup).
- * PA2  - PIN2                      (input pullup).
- * PA3  - PIN3                      (input pullup).
- * PA4  - PIN4                      (input pullup).
- * PA5  - PIN5                      (input pullup).
- * PA6  - PIN6                      (input pullup).
- * PA7  - PIN7                      (input pullup).
- * PA8  - PIN8                      (input pullup).
- * PA9  - PIN9                      (input pullup).
- * PA10 - PIN10                     (input pullup).
- * PA11 - USB_DM                    (input floating).
- * PA12 - USB_DP                    (input floating).
- * PA13 - SWDIO                     (alternate 0).
- * PA14 - SWCLK                     (alternate 0).
- * PA15 - PIN15                     (input pullup).
+ * TODO
  */
 #define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_BUTTON) |         \
                                      PIN_MODE_INPUT(GPIOA_PIN1) |           \
@@ -230,7 +215,7 @@
                                      PIN_MODE_INPUT(GPIOA_PIN5) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN6) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN7) |           \
-                                     PIN_MODE_INPUT(GPIOA_PIN8) |           \
+                                     PIN_MODE_OUTPUT(GPIOA_PIN8) |          \
                                      PIN_MODE_INPUT(GPIOA_PIN9) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN10) |          \
                                      PIN_MODE_INPUT(GPIOA_USB_DM) |         \
@@ -267,9 +252,9 @@
                                      PIN_OSPEED_VERYLOW(GPIOA_PIN10) |      \
                                      PIN_OSPEED_VERYLOW(GPIOA_USB_DM) |     \
                                      PIN_OSPEED_VERYLOW(GPIOA_USB_DP) |     \
-                                     PIN_OSPEED_HIGH(GPIOA_SWDIO) |         \
-                                     PIN_OSPEED_HIGH(GPIOA_SWCLK) |         \
-                                     PIN_OSPEED_HIGH(GPIOA_PIN15))
+                                     PIN_OSPEED_VERYLOW(GPIOA_SWDIO) |         \
+                                     PIN_OSPEED_VERYLOW(GPIOA_SWCLK) |         \
+                                     PIN_OSPEED_VERYLOW(GPIOA_PIN15))
 #define VAL_GPIOA_PUPDR             (PIN_PUPDR_FLOATING(GPIOA_BUTTON) |     \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN1) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN2) |         \
@@ -340,7 +325,7 @@
  * PB15 - SPI2_MOSI                 (alternate 0).
  */
 #define VAL_GPIOB_MODER             (PIN_MODE_INPUT(GPIOB_PIN0) |           \
-                                     PIN_MODE_INPUT(GPIOB_PIN1) |           \
+                                     PIN_MODE_OUTPUT(GPIOB_PIN1) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN2) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN3) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN4) |           \
@@ -352,9 +337,9 @@
                                      PIN_MODE_INPUT(GPIOB_PIN10) |          \
                                      PIN_MODE_INPUT(GPIOB_PIN11) |          \
                                      PIN_MODE_INPUT(GPIOB_PIN12) |          \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_SCK) |   \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_MISO) |  \
-                                     PIN_MODE_ALTERNATE(GPIOB_SPI2_MOSI))
+                                     PIN_MODE_INPUT(GPIOB_SPI2_SCK) |       \
+                                     PIN_MODE_INPUT(GPIOB_SPI2_MISO) |      \
+                                     PIN_MODE_INPUT(GPIOB_SPI2_MOSI))
 #define VAL_GPIOB_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOB_PIN0) |       \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PIN1) |       \
                                      PIN_OTYPE_PUSHPULL(GPIOB_PIN2) |       \
@@ -373,9 +358,9 @@
                                      PIN_OTYPE_PUSHPULL(GPIOB_SPI2_MOSI))
 #define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_VERYLOW(GPIOB_PIN0) |       \
                                      PIN_OSPEED_VERYLOW(GPIOB_PIN1) |       \
-                                     PIN_OSPEED_HIGH(GPIOB_PIN2) |          \
-                                     PIN_OSPEED_HIGH(GPIOB_PIN3) |          \
-                                     PIN_OSPEED_HIGH(GPIOB_PIN4) |          \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PIN2) |       \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PIN3) |       \
+                                     PIN_OSPEED_VERYLOW(GPIOB_PIN4) |       \
                                      PIN_OSPEED_VERYLOW(GPIOB_PIN5) |       \
                                      PIN_OSPEED_VERYLOW(GPIOB_PIN6) |       \
                                      PIN_OSPEED_VERYLOW(GPIOB_PIN7) |       \
@@ -462,10 +447,10 @@
                                      PIN_MODE_INPUT(GPIOC_PIN3) |           \
                                      PIN_MODE_INPUT(GPIOC_PIN4) |           \
                                      PIN_MODE_INPUT(GPIOC_PIN5) |           \
-                                     PIN_MODE_OUTPUT(GPIOC_LED_RED) |       \
-                                     PIN_MODE_OUTPUT(GPIOC_LED_BLUE) |      \
-                                     PIN_MODE_OUTPUT(GPIOC_LED_ORANGE) |    \
-                                     PIN_MODE_OUTPUT(GPIOC_LED_GREEN) |     \
+                                     PIN_MODE_INPUT(GPIOC_LED_RED) |        \
+                                     PIN_MODE_INPUT(GPIOC_LED_BLUE) |       \
+                                     PIN_MODE_INPUT(GPIOC_LED_ORANGE) |     \
+                                     PIN_MODE_INPUT(GPIOC_LED_GREEN) |      \
                                      PIN_MODE_INPUT(GPIOC_PIN10) |          \
                                      PIN_MODE_INPUT(GPIOC_PIN11) |          \
                                      PIN_MODE_INPUT(GPIOC_PIN12) |          \

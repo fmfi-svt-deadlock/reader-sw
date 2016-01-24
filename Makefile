@@ -82,7 +82,7 @@ PROJECT = deadlock-reader
 
 # Imported source files and paths
 CHIBIOS = ../ChibiOS
-BOARD   = board/reader-revA
+BOARD   = boards/reader-revA
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
 # HAL-OSAL files (optional).
