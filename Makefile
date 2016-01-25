@@ -88,12 +88,14 @@ ifeq ($(BOARD),reader-revA)
     # reader-revA board actually shoud have STM32F052 MCU, this is for development and
     # not final!
     LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
+    FW_FLASH_ADDRESS= 0x08000000
 endif
 
 ifeq ($(BOARD),reader-plus-revA)
     BOARD_FOLDER =
     $(error Reader Plus revA board is not yes supported!)
     LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
+    FW_FLASH_ADDRESS= 0x08000000
 endif
 
 ifndef BOARD_FOLDER
@@ -233,7 +235,7 @@ include $(RULESPATH)/rules.mk
 #
 
 flash: build/deadlock-reader.bin
-	st-flash write build/deadlock-reader.bin 0x08000000
+	st-flash write build/deadlock-reader.bin $(FW_FLASH_ADDRESS)
 
 debug: build/deadlock-reader.elf
 	if [ -z "`pgrep st-util`"]; then st-util 2> /dev/null & fi

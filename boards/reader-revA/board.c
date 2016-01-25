@@ -15,7 +15,7 @@
 
     ----
 
-    This change was modified to be used in the Project Deadlock. Changelist:
+    This file was modified to be used in the Project Deadlock. Changelist:
       - Board initialization code
 
     These changes are licensed under:

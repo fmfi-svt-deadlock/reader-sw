@@ -13,7 +13,10 @@ int main(void) {
     halInit();
     chSysInit();
 
-    while (true) {
-        chThdSleepMilliseconds(500);
+    // This function is now the Idle thread. It must never exit and it must implement
+    // an infinite loop.
+    while(true) {
+        // To prevent compiler from optimizing-out the empty loop
+        __asm__ __volatile__("");
     }
 }
