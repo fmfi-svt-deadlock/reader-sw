@@ -6,6 +6,16 @@ Firmware for the Reader component of project Deadlock. For the project overview,
 
 The documentation (including internal documentation) is available on the project wiki https://github.com/fmfi-svt-deadlock/server/wiki.
 
+### ChibiOS STM32F0xx port documentation
+
+If you want to hack on this firmware, you may need ChibiOS documentation as well. Also specific documentation for the
+STM32F0xx port of the HAL may be useful. To get that modify tag `INPUT=` in `doc/hal/Doxyfile_html` in the ChibiOS root as follows:
+  - Remove `../../os/hal/templates`
+  - Add `../../os/hal/ports/STM32/STM32F0xx`
+  - Add all relevant folders in `../../os/hal/ports/STM32/LLD`. You can find which folders are relevant by looking at `PLATFORMINC` filed in `os/hal/ports/STM32/STM32F0xx/platform.mk`.
+
+Then build documentation as described in `doc/hal/readme.txt`.
+
 ## Compiling
 
 This firmware is based on the ChibiOS (http://www.chibios.org/).
