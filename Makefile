@@ -235,6 +235,7 @@ include $(RULESPATH)/rules.mk
 #
 
 flash: build/deadlock-reader.bin
+	st-flash erase
 	st-flash write build/deadlock-reader.bin $(FW_FLASH_ADDRESS)
 
 debug: build/deadlock-reader.elf
