@@ -18,6 +18,7 @@
     This file was modified to be used in the Project Deadlock. Changelist:
       - Customized I/O pin assignment names
       - Customized initial PAL setup
+      - Added SPI configuration
 
     These changes are licensed under:
 
@@ -176,8 +177,7 @@
                                      PIN_PUPDR_PULLDOWN(GPIOA_SWCLK))
 
 #define VAL_GPIOA_ODR               (ODR_DEFAULT_LOW |                      \
-                                     PIN_ODR_HIGH(GPIOA_RFID_SS) |          \
-                                     PIN_ODR_HIGH(GPIOA_RFID_RST))
+                                     PIN_ODR_HIGH(GPIOA_RFID_SS))
 
 #define VAL_GPIOA_AFRL              (AFIO_DEFAULT_0 |                       \
                                      PIN_AFIO_AF(GPIOA_RFID_SCK, 0) |       \
