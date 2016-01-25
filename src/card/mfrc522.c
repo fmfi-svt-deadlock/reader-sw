@@ -5,7 +5,7 @@
 #define dlMfrc522PowerUp()   (palSetPad(GPIOA, GPIOA_RFID_RST))
 #define dlMfrc522PowerDown() (palClearPad(GPIOA, GPIOA_RFID_RST))
 
-enum Mfrc522Commands {
+typedef enum {
     PCD_IDLE            = 0x00,
     PCD_AUTHENT         = 0x0E,
     PCD_RECEIVE         = 0x08,
@@ -13,9 +13,9 @@ enum Mfrc522Commands {
     PCD_TRANSCEIVE      = 0x0C,
     PCD_RESETPHASE      = 0x0F,
     PCD_CALCCRC         = 0x03
-};
+} Mfrc522Command;
 
-enum MFRC522Registers {
+typedef enum {
     Reserved00          = 0x00,
     CommandReg          = 0x01,
     ComIEnReg           = 0x02,
@@ -80,9 +80,40 @@ enum MFRC522Registers {
     Reserved32          = 0x3D,
     Reserved33          = 0x3E,
     Reserved34          = 0x3F
-};
+} MFRC522Register;
 
 static const SPIConfig mfrc522_spi_config = SPI_MFRC522_HAL_CONFIG;
+
+/*
+ * WriteRegister and ReadRegister functions.
+ * They send an address byte followed by either data byte or dummy byte.
+ * The format of the address byte is:
+ *   7 (MSB): 1 - Read. 0 - write
+ *   6 - 1  : Address
+ *   0      : 0
+ */
+
+#define ADDRESS_MASK 0b01111110
+#define ADDRESS_READ 0b10000000
+
+void dlMfrc522WriteRegister(MFRC522Register address, uint8_t value) {
+    uint8_t const tx[] = {(address << 1) & ADDRESS_MASK, value};
+    spiSelect(&SPI_MFRC522);
+    spiSend(&SPI_MFRC522, sizeof(tx), tx);
+    spiUnselect(&SPI_MFRC522);
+}
+
+uint8_t dlMfrc522ReadRegister(MFRC522Register address) {
+    uint8_t const tx[] = {((address << 1) & ADDRESS_MASK) | ADDRESS_READ, 0x00};
+    uint8_t rx[2];
+    spiSelect(&SPI_MFRC522);
+    spiExchange(&SPI_MFRC522, sizeof(tx), tx, rx);
+    spiUnselect(&SPI_MFRC522);
+    return rx[1];
+}
+
+#define dlMfrc522SetMaskInRegister(address, mask) (dlMfrc522WriteRegister((address), dlMfrc522ReadRegister((address)) | (mask)))
+#define dlMfrc522ClearMaskInRegister(address, mask) (dlMfrc522WriteRegister((address), dlMfrc522ReadRegister((address)) & ~(mask)))
 
 void dlMfrc522Reset(void) {
     dlMfrc522PowerDown();
@@ -92,4 +123,8 @@ void dlMfrc522Reset(void) {
 void dlMfrc522DriverInit(void) {
     spiStart(&SPI_MFRC522, &mfrc522_spi_config);
     dlMfrc522PowerUp();
+
+    uint8_t response = dlMfrc522ReadRegister(CommandReg);
+
+    return;
 }
