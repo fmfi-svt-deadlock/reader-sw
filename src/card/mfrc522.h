@@ -3,5 +3,6 @@
 
 void dlMfrc522DriverInit(void);
 void dlMfrc522Reset(void);
+void dlMfrc522Init(void);
 
 #endif

@@ -2,6 +2,11 @@
 #include "ch.h"
 #include "hal.h"
 
+/*
+ * Note: This may not make sense to you unless you are familiar with
+ * the MFRC522 module. Please consult the MFRC522 module datasheet first.
+ */
+
 #define dlMfrc522PowerUp()   (palSetPad(GPIOA, GPIOA_RFID_RST))
 #define dlMfrc522PowerDown() (palClearPad(GPIOA, GPIOA_RFID_RST))
 
@@ -115,6 +120,9 @@ uint8_t dlMfrc522ReadRegister(MFRC522Register address) {
 #define dlMfrc522SetMaskInRegister(address, mask) (dlMfrc522WriteRegister((address), dlMfrc522ReadRegister((address)) | (mask)))
 #define dlMfrc522ClearMaskInRegister(address, mask) (dlMfrc522WriteRegister((address), dlMfrc522ReadRegister((address)) & ~(mask)))
 
+#define dlMfrc522AntennaOn() (dlMfrc522SetMaskInRegister(TxControlReg, 0x03))
+#define dlMfrc522AntennaOff() (dlMfrc522ClearMaskInRegister(TxControlReg, 0x03))
+
 void dlMfrc522Reset(void) {
     dlMfrc522PowerDown();
     dlMfrc522PowerUp();
@@ -122,9 +130,28 @@ void dlMfrc522Reset(void) {
 
 void dlMfrc522DriverInit(void) {
     spiStart(&SPI_MFRC522, &mfrc522_spi_config);
-    dlMfrc522PowerUp();
+}
 
-    uint8_t response = dlMfrc522ReadRegister(CommandReg);
+void dlMfrc522Init(void) {
+    // Set TAuto - timer starts automatically after the enf of transmission
+    //     TPrescaler_Hi - set to 0x0D
+    dlMfrc522WriteRegister(TModeReg, 0x8D);
 
-    return;
+    // Set TPrescaler_Lo - set to 0x3E.
+    // Together with TPrescaler_Hi the timer will run at approx 2KHz
+    dlMfrc522WriteRegister(TPrescalerReg, 0x3E);
+
+    // Set reload value to 0x1E. The timer will run for approx 15ms.
+    dlMfrc522WriteRegister(TReloadRegH, 0x00);
+    dlMfrc522WriteRegister(TReloadRegL, 0x00);
+
+    // Set Force100ASK: Forces a 100% ASK modulation independent of the
+    //                  ModGSPReg setting
+    dlMfrc522WriteRegister(TxASKReg, 0x40);
+
+    // Set TXWaitRF   : Transmitter will only start if the RF field is
+    //                  is present
+    //     PolMFin    : MFIN pin is active HIGH
+    //     CRCPreset  : to 0x6363 as specified in ISO/IEC 14443
+    dlMfrc522WriteRegister(ModeReg, 0x3D);
 }
