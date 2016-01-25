@@ -1,6 +1,8 @@
 #include "ch.h"
 #include "hal.h"
 
+#include "card/card.h"
+
 int main(void) {
     /*
      * System initializations.
@@ -12,6 +14,8 @@ int main(void) {
 
     halInit();
     chSysInit();
+
+    chThdCreateStatic(waCardReader, sizeof(waCardReader), NORMALPRIO, CardReader, NULL);
 
     // This function is now the Idle thread. It must never exit and it must implement
     // an infinite loop.

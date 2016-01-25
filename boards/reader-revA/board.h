@@ -245,6 +245,32 @@
 #define VAL_GPIOF_AFRL              (AFIO_DEFAULT_0)
 #define VAL_GPIOF_AFRH              (AFIO_DEFAULT_0)
 
+/*
+ * SPI setup
+ * Setup of the SPI peripheral used to communicate with the MFRC522 module.
+ *
+ * We are using SPI1 peripheral
+ * LSB-first
+ * f_{PCLK}/8 (clock frequency will be ~6MHz => 6Mb/s. MFRC522 can handle 10Mb/s),
+ * Clock polarity: to 0 when idle,
+ * Clock phase: first clock transition is the data capture edge,
+ * 8-bit data size.
+ */
+#define SPI_MFRC522                 SPID1
+#define SPI_MFRC522_CS_PORT         GPIOA
+#define SPI_MFRC522_CS_PIN          GPIOA_RFID_SS
+#define SPI_MFRC522_VAL_CR1         (SPI_CR1_MSTR |                         \
+                                     SPI_CR1_BR_1)
+#define SPI_MFRC522_VAL_CR2         (SPI_CR2_DS_2 |                         \
+                                     SPI_CR2_DS_1 |                         \
+                                     SPI_CR2_DS_0)
+// This is the initializer of platform-specific SPIConfig structure.
+#define SPI_MFRC522_HAL_CONFIG      {NULL,                                  \
+                                     SPI_MFRC522_CS_PORT,                   \
+                                     SPI_MFRC522_CS_PIN,                    \
+                                     SPI_MFRC522_VAL_CR1,                   \
+                                     SPI_MFRC522_VAL_CR2 }
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {
