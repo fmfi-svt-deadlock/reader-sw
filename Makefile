@@ -227,3 +227,15 @@ ULIBS =
 
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
+
+##############################################################################
+# Start of helper flash and debug commands
+#
+
+flash: build/deadlock-reader.bin
+	st-flash write build/deadlock-reader.bin 0x08000000
+
+debug: build/deadlock-reader.elf
+	if [ -z "`pgrep st-util`"]; then st-util 2> /dev/null & fi
+	arm-none-eabi-gdb build/deadlock-reader.elf -ex "target extended :4242"
+	pkill st-util
