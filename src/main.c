@@ -17,6 +17,7 @@ int main(void) {
     // an infinite loop.
     while(true) {
         // To prevent compiler from optimizing-out the empty loop
+        // TODO implement switching MCU to a low-power mode.
         __asm__ __volatile__("");
     }
 }
