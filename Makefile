@@ -126,7 +126,7 @@ CSRC = $(STARTUPSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
        $(TESTSRC) \
-       $(wildcard src/*.c)
+       $(shell find src/ -type f -name '*.c')
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
