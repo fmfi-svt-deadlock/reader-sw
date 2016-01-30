@@ -2,9 +2,18 @@
 #include "ch.h"
 #include "hal.h"
 
+#include "mfrc522.h"
+
 /*
  * Note: This may not make sense to you unless you are familiar with
  * the MFRC522 module. Please consult the MFRC522 module datasheet first.
+ */
+
+/*
+ * THIS FILE IS A ONE BIG TODO!
+ * 
+ * This is just a C port of previously-written driver in Python for the MFRC522. It is not optimized,
+ * hard to maintain, does not utilize facilities of ChibiOS, and just generally sucks. Will be rewritten ASAP.
  */
 
 #define dlMfrc522PowerUp()   (palSetPad(GPIOA, GPIOA_RFID_RST))
@@ -154,4 +163,87 @@ void dlMfrc522Init(void) {
     //     PolMFin    : MFIN pin is active HIGH
     //     CRCPreset  : to 0x6363 as specified in ISO/IEC 14443
     dlMfrc522WriteRegister(ModeReg, 0x3D);
+}
+
+#define dlMfrc522Command(command) (dlMfrc522WriteRegister(CommandReg, command))
+
+uint16_t dlMfrc522CalculateCRCA(uint8_t *data, uint16_t n) {
+    dlMfrc522Command(PCD_IDLE);
+
+    // Flush the FIFO
+    dlMfrc522SetMaskInRegister(FIFOLevelReg, 0x80);
+
+    for (int i = 0; i < n; i++) {
+        dlMfrc522WriteRegister(FIFODataReg, *(data++));
+    }
+
+    dlMfrc522Command(PCD_CALCCRC);
+
+    while(! (dlMfrc522ReadRegister(DivIrqReg) & 0x04)) {
+        ;
+    }
+
+    return (dlMfrc522ReadRegister(CRCResultRegH) << 8) | dlMfrc522ReadRegister(CRCResultRegL);
+}
+
+int16_t dlMfrc522Transceive(uint8_t *data_tx, uint16_t n_tx, uint8_t *data_rx, uint16_t n_rx) {
+    // Invert output interrupt signal; enable Tx interrupt, Rx interrupt,
+    // idle interrupt, FIFO Low interrupt, ErrorInterrupt and TimerInterrupt.
+    dlMfrc522WriteRegister(ComIEnReg, 0xF7);
+    // Clear interrupt request bits
+    dlMfrc522ClearMaskInRegister(CommIrqReg, 0x80);
+    // Flush the FIFO
+    dlMfrc522WriteRegister(FIFOLevelReg, 0x80);
+
+    for (uint16_t i = 0; i < n_tx; i++) {
+        dlMfrc522WriteRegister(FIFODataReg, *(data_tx++));
+    }
+
+    dlMfrc522Command(PCD_TRANSCEIVE);
+
+    uint8_t bit_framing_reg = dlMfrc522ReadRegister(BitFramingReg);
+    // Set 'StartSend' bit
+    dlMfrc522WriteRegister(BitFramingReg, bit_framing_reg | 0x80);
+
+    // Busy wait for transmission finish, error or timeout
+    uint8_t irq_reg;
+    while (true) {
+        irq_reg = dlMfrc522ReadRegister(CommIrqReg);
+        // Check interrupts: Tx and Rx complete, error or timeout
+        if (((irq_reg & 0x20) && (irq_reg & 0x40)) || (irq_reg & 0x03)) {
+            break;
+        }
+    }
+    
+    // Restore original BitFraming register
+    dlMfrc522WriteRegister(BitFramingReg, bit_framing_reg);
+    
+    // TODO this does not handle all cases
+    if (irq_reg & 0x02) {
+        uint8_t error = dlMfrc522ReadRegister(ErrorReg);
+        if (error & 0x1B) {
+            dlMfrc522Command(PCD_IDLE);
+            return MFRC522_TRX_ERROR;
+        }
+    }
+    
+    // Timeout
+    if (irq_reg & 0x01) {
+        dlMfrc522Command(PCD_IDLE);
+        return MFRC522_TRX_NOCARD;
+    }
+    
+    uint8_t response_length = dlMfrc522ReadRegister(FIFOLevelReg);
+    
+    if (n_rx > response_length) {
+        n_rx = response_length;
+    }
+    
+    for (uint8_t i = 0; i < n_rx; i++) {
+        *(data_rx++) = dlMfrc522ReadRegister(FIFODataReg);
+    }
+    
+    dlMfrc522Command(PCD_IDLE);
+    
+    return n_rx;
 }
