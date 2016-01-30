@@ -2,6 +2,10 @@
 .dep/
 build/
 
+# CLion project files
+.idea/
+CMakeLists.txt
+
 # Object files
 *.o
 *.ko
