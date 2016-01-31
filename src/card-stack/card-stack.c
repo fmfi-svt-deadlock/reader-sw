@@ -1,7 +1,7 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "card.h"
+#include "card-stack.h"
 #include "mfrc522.h"
 
 THD_WORKING_AREA(waCardReader, 128);
