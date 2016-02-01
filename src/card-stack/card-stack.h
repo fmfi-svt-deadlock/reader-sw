@@ -3,7 +3,7 @@
 
 #include "ch.h"
 
-extern THD_WORKING_AREA(waCardReader, 128);
+extern THD_WORKING_AREA(waCardReader, 512);
 THD_FUNCTION(CardReader, arg);
 
 #endif
