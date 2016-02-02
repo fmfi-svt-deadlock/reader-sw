@@ -7,5 +7,6 @@
 #define CARD_ERROR -2
 
 int8_t dlCardGetId(uint8_t *id);
+bool dlCardIsPresent(void);
 
 #endif

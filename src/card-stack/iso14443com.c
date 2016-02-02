@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdbool.h>
 #include "iso14443com.h"
 #include "mfrc522.h"
 
@@ -101,4 +102,15 @@ int8_t dlCardGetId(uint8_t *id) {
     if (status == MFRC522_TRX_ERROR) return CARD_ERROR;
     dlMfrc522WriteRegister(BitFramingReg, 0x00);
     return dlCardPerformCascade(id);
+}
+
+bool dlCardIsPresent() {
+    dlMfrc522WriteRegister(BitFramingReg, 0x07);
+    uint8_t buffer[3];
+    buffer[0] = REQA;
+    int16_t status = dlMfrc522Transceive(buffer, 1, buffer, 3);
+    if (status == MFRC522_TRX_NOCARD) return false;
+    buffer[0] = REQA;
+    dlMfrc522Transceive(buffer, 1, buffer, 3);
+    return true;
 }
