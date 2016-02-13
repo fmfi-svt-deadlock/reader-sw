@@ -17,7 +17,15 @@ THD_FUNCTION(CardReader, arg) {
     uint8_t id[10];
 
     while (true) {
-        result = dlCardGetId(id);
-        if (result == 15) break;
+        if (dlCardIsPresent()) {
+            palSetPad(GPIOA, GPIOA_LED_G2);
+            result = dlCardGetId(id);
+            if (result > 0) {
+                palSetPad(GPIOB, GPIOB_LED_G1);
+            }
+        }
+        chThdSleepMilliseconds(1000);
+        palClearPad(GPIOA, GPIOA_LED_G2);
+        palClearPad(GPIOB, GPIOB_LED_G1);
     }
 }
