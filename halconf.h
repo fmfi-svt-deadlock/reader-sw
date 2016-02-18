@@ -60,6 +60,13 @@
 #include "mcuconf.h"
 
 /**
+ * @brief   Enables custom HAL drivers
+ */
+#if !defined(HAL_USE_CUSTOM) || defined(__DOXYGEN__)
+#define HAL_USE_CUSTOM              TRUE
+#endif
+
+/**
  * @brief   Enables the PAL subsystem.
  */
 #if !defined(HAL_USE_PAL) || defined(__DOXYGEN__)
@@ -197,6 +204,22 @@
  */
 #if !defined(HAL_USE_WDG) || defined(__DOXYGEN__)
 #define HAL_USE_WDG                 FALSE
+#endif
+
+/* ========---------- Custom drivers ----------======== */
+
+/**
+ * @brief   Enables the MFRC522 driver.
+ */
+#if !defined(HAL_USE_MFRC522) || defined(__DOXYGEN__)
+#define HAL_USE_MFRC522             TRUE
+#endif
+
+/**
+ * @brief   Enables the ISO/IEC 14443 PICC driver.
+ */
+#if !defined(HAL_USE_ISO14443_PICC) || defined(__DOXYGEN__)
+#define HAL_USE_ISO14443_PICC       TRUE
 #endif
 
 /*===========================================================================*/
@@ -403,6 +426,51 @@
  */
 #if !defined(USB_USE_WAIT) || defined(__DOXYGEN__)
 #define USB_USE_WAIT                FALSE
+#endif
+
+/* Custom drivers */
+
+/*===========================================================================*/
+/* MFRC522 related settings.                                                 */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables SPI support.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(MFRC522_USE_SPI) || defined(__DOXYGEN__)
+#define MFRC522_USE_SPI             TRUE
+#endif
+
+/**
+ * @brief   Enables I2C support.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(MFRC522_USE_I2C) || defined(__DOXYGEN__)
+#define MFRC522_USE_I2C             FALSE
+#endif
+
+/**
+ * @brief   Enables UART support.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(MFRC522_USE_UART) || defined(__DOXYGEN__)
+#define MFRC522_USE_UART            FALSE
+#endif
+
+/*===========================================================================*/
+/* ISO/IEC 14443 PICC related settings.                                      */
+/*===========================================================================*/
+
+/**
+ * @brief   PICC driver will use its own data buffers for operation.
+ * @note    Disabling this option makes the driver faster and saves memory,
+ *          however user then must guarantee that buffers passed to the driver
+ *          won't change until a response is successfully received by the
+ *          driver.
+ */
+#if !defined(ISO14443_PICC_SAFE_BUFFERS) || defined(__DOXYGEN__)
+#define ISO14443_PICC_SAFE_BUFFERS  TRUE
 #endif
 
 #endif /* _HALCONF_H_ */
