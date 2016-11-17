@@ -165,6 +165,6 @@ def run_doxygen(app):
             sys.stderr.write("Failed to run doxygen: " + str(e))
 
 def setup(app):
+    app.connect("builder-inited", run_doxygen)
     app.add_config_value('recommonmark_config', {}, True)
     app.add_transform(AutoStructify)
-    app.connect("builder-inited", run_doxygen)

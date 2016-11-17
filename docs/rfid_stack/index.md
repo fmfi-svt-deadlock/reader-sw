@@ -10,6 +10,15 @@ Main functionality of the Reader is to, of course, read an RFID card. To accompl
  - To be thread safe
  - To be easy to use, but not while compromising modularity
 
+### Documentation of components
+
+```eval_rst
+.. toctree::
+    :maxdepth: 2
+
+    hal_abstract_iso14443_pcd
+```
+
 Architecture
 ------------
 
