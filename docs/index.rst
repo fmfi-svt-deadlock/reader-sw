@@ -10,7 +10,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
-   todo
+   rfid_stack/index
 
 .. Indices and tables
 .. ==================
