@@ -6,6 +6,8 @@
 # This file is execfile()d with the current directory set to its
 # containing dir.
 
+import subprocess
+import sys
 import recommonmark
 from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
@@ -21,7 +23,8 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.graphviz'
+    'sphinx.ext.graphviz',
+    'breathe'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,12 +54,19 @@ author = u'FMFI ŠVT'
 # The short X.Y version.
 version = '2.0'
 # The full version, including alpha/beta/rc tags.
-release = '2.0 rev-A'
+release = '2.0 alpha'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', '_venv']
+
+# Projects the breathe should look at
+breathe_projects = {
+    "reader": "_build_doxygen/"
+}
+
+breathe_default_project = "reader"
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -146,6 +156,15 @@ html_use_smartypants = True
 # implements a search results scorer. If empty, the default will be used.
 #html_search_scorer = 'scorer.js'
 
+def run_doxygen(app):
+    try:
+        retcode = subprocess.call("cd ../; doxygen", shell=True)
+        if retcode < 0:
+            sys.stderr.write("Doxygen terminated with error: " + str(retcode))
+    except OSError as e:
+            sys.stderr.write("Failed to run doxygen: " + str(e))
+
 def setup(app):
     app.add_config_value('recommonmark_config', {}, True)
     app.add_transform(AutoStructify)
+    app.connect("builder-inited", run_doxygen)

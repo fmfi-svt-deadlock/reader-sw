@@ -4,7 +4,20 @@ Firmware for the Reader component of project Deadlock. For the project overview,
 
 ## Documentation
 
-The documentation (including internal documentation) is available on the project wiki https://github.com/fmfi-svt-deadlock/server/wiki.
+The documentation (including internal documentation) is built using [Sphinx](http://www.sphinx-doc.org/). Current version is also available on deadlock-reader-sw.readthedocs.com.
+
+If you want to build the documentation for yourself install doxygen and then go to folder `docs/` and do the following:
+
+```bash
+# Create a new virtualenv
+virtualenv _venv
+# Install dependencies
+pip install -r requirements.txt
+# Build the docs
+make html
+```
+
+This will build the documentation (including source code documentation, it will run doxygen as a part of the build process).
 
 ### ChibiOS STM32F0xx port documentation
 

@@ -41,3 +41,5 @@ CMakeLists.txt
 
 # Built documentation
 docs/_build/
+docs/_build_doxygen/
+docs/_venv
