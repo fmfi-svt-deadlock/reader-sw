@@ -34,3 +34,6 @@ build/
 
 # Debug files
 *.dSYM/
+
+# Built documentation
+docs/_build/
