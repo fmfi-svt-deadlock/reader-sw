@@ -38,3 +38,6 @@ CMakeLists.txt
 
 # Debug files
 *.dSYM/
+
+# Built documentation
+docs/_build/
