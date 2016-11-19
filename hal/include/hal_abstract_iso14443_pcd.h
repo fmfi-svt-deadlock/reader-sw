@@ -160,6 +160,20 @@ typedef enum {
 } pcdmode_t;
 
 /**
+ * @brief  List of possible extended features.
+ *
+ * For each extended feature 2 structures are defined in file
+ * hal_abstract_iso14443_pcd_ext.h. The first is a param strucure, the second
+ * is a response structure.
+ */
+typedef enum {
+    PCD_EXT_SELFTEST,          /**< Perform a self-test                      */
+    PCD_EXT_CALCULATE_CRC_A,   /**< Calculate type-A CRC                     */
+    PCD_EXT_CALCULATE_CRC_B,   /**< Calculate type-B CRC                     */
+    PCD_EXT_MIFARE_AUTH        /**< Perform a Mifare auth and turn on crypto */
+} pcdfeature_t;
+
+/**
  * @brief  Structure of communuication parameters supported by the PCD
  */
 typedef struct {
@@ -232,7 +246,7 @@ struct BasePcdVMT {
      * @return     Pointer to a PcdSParams structure. Content of this structure
      *             should not be modified.
      */
-    (PcdSParams*) (*getSupportedParamsAB)(void *inst);
+    PcdSParams *(*getSupportedParamsAB)(void *inst);
 
     /**
      * @brief      Sets communication parameters.
@@ -442,6 +456,29 @@ struct BasePcdVMT {
      * @param[in] inst pointer to a Pcd structure
      */
     void (*releaseBus)(void *inst);
+
+    /**
+     * @brief      Checks whether this PCD supports the given extended feature.
+     *
+     * @param[in] inst pointer to a Pcd structure
+     */
+    bool (*supportsExtFeature)(void *inst, pcdfeature_t feature);
+
+    /**
+     * @brief      Invokes an extended feature.
+     *
+     * @param[in] inst pointer to a Pcd structure
+     * @param[in] feature identifier of the feature
+     * @param[in] params parameters passed to the feature function. Can be NULL
+     *                   if function doesn't expect any.
+     * @param[out] result result of the feature function.
+     *
+     * @retval     PCD_OK Feature function executed successfully
+     * @retval     PCD_BAD_STATE Feature function can't be executed now
+     * @retval     PCD_UNSUPPORTED This feature is not supported
+     */
+    pcdresult_t (*callExtFeature)(void *inst, pcdfeature_t feature,
+                                  void *params, void *result);
 };
 
 /**
@@ -525,6 +562,18 @@ typedef struct {
  * @see BasePcdVMT.releaseBus
  */
 #define pcdReleaseBus(ip)  ((ip)->vmt->releaseBus(ip))
+
+/**
+ * @see BasePcdVMT.supportsExtFeature
+ */
+#define pcdSupportsExtFeature(ip, feature)                                    \
+        ((ip)->vmt->supportsExtFeature(ip, feature))
+
+/**
+ * @see BasePcdVMT.callExtFeature
+ */
+#define pcdCallExtFeature(ip, feature, params, result)                        \
+        ((ip)->vmt->callExtFeature(ip, feature, params, result))
 
 /** @} */
 
