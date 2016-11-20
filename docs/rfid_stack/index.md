@@ -17,6 +17,7 @@ Main functionality of the Reader is to, of course, read an RFID card. To accompl
     :maxdepth: 2
 
     hal_abstract_iso14443_pcd
+    hal_abstract_CRCard
 ```
 
 Architecture
