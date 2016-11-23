@@ -106,7 +106,7 @@ endif
 
 # Imported source files and paths
 # Warning: order is important!
-CHIBIOS = ../ChibiOS
+CHIBIOS = deps/ChibiOS
 CUSTOM_HAL = hal
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
