@@ -1,6 +1,13 @@
 # Reader firmware
 
+[![Build status](https://travis-ci.org/fmfi-svt-deadlock/reader-sw.svg?branch=master)](https://travis-ci.org/fmfi-svt-deadlock/reader-sw)
+[![Docs](https://readthedocs.org/projects/pip/badge/?version=latest)](http://deadlock-reader-sw.readthedocs.io/en/latest/)
+
 Firmware for the Reader component of project Deadlock. For the project overview, and more information about what the reader does and what communication protocols it utilizes see https://github.com/fmfi-svt-deadlock/server/wiki.
+
+## Submodules
+
+Dependencies (ChibiOS, testing framework) are submodules of this repository. Either clone with `--recursive` or run `git submodule update --init --recursive` after cloning / checkout to get them.
 
 ## Documentation
 
@@ -40,10 +47,7 @@ To compile this firmware:
       - `arm-none-eabi-gcc` (tested on gcc version 5.3.0 (Arch Repository))
       - `arm-none-eabi-binutils` (tested on 2.25.1)
       - `arm-none-eabi-newlib` (tested on 2.3.0.20160104)
-  - Download and extract the ChibiOS.
-    - The project is tested on ChibiOS 16.1.2 and may not work on other versions.
   - Edit the `Makefile`:
-    - set `CHIBIOS = ` variable to point to the extracted ChibiOS.
     - set `BOARD = ` variable to the name of the board you want to compile this firmware for.
   - `make` the project.
 
@@ -70,6 +74,25 @@ The following guide is again for `stlink`.
 
 For further information please consult `stlink` documentation.
 
+## Testing
+
+This project uses [ThrowTheSwitch/Unity](https://github.com/ThrowTheSwitch/Unity) for unit tests and [meekrosoft/fff](https://github.com/meekrosoft/fff) for mocking.
+
+Run `make test` to execute these tests.
+
+### Writing tests
+
+Test files are in the `test/` folder. The `test/` folder has the same internal folder structure as this project.
+
+Let's say you want to test file `hal/src/myawesome_driver.c`. Then create file `test/hal/src/myawesome_driver-test.c`. The path and filename must match, and the file must have a `-test.c` suffix. There can be at most one test file per source file. This file should contain the following:
+
+  - `include "myawesome_driver.h"`: Include of header of file under test
+  - FFF mocks of required functions
+  - `void setUp(void)`: Run before every test
+  - `void tearDown(void)`: Run after every test
+  - `test.*` or `should.*` or `spec.*`: Tests themselves (returning void, no args).
+
+`test/src/main-test.c` does nothing useful, but serves as an example you can base your own test files on.
 
 ## License
 
