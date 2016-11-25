@@ -1,6 +1,9 @@
 [submodule "deps/ChibiOS"]
 	path = deps/ChibiOS
 	url = https://github.com/ChibiOS/ChibiOS
-[submodule "deps/CMock"]
-	path = deps/CMock
-	url = https://github.com/ThrowTheSwitch/CMock.git
+[submodule "deps/Unity"]
+	path = deps/Unity
+	url = https://github.com/ThrowTheSwitch/Unity.git
+[submodule "deps/fff"]
+	path = deps/fff
+	url = https://github.com/meekrosoft/fff.git
