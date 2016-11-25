@@ -116,6 +116,8 @@ TEST_RUNNERS = build/test/runners/
 TEST_OBJS = build/test/objs/
 TEST_RESULTS = build/test/results/
 TEST_BUILD_PATHS = $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
+# So that we can test both src/ and hal/
+TEST_ROOOT = ./
 SOURCE = src/
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
@@ -305,7 +307,7 @@ $(TEST_OBJS)%-test-runner.o: $(TEST_RUNNERS)%-test-runner.c
 	@mkdir -p `dirname $@`
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
 
-$(TEST_OBJS)%.o:: $(SOURCE)%.c
+$(TEST_OBJS)%.o:: $(TEST_ROOT)%.c
 	@echo 'Compiling $<'
 	@mkdir -p `dirname $@`
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
