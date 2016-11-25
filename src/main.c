@@ -1,9 +1,8 @@
 #include "ch.h"
 #include "hal.h"
+#include "main.h"
 
-#include "card-stack/card-stack.h"
-
-int main(void) {
+void deadlock_init(void) {
     /*
      * System initializations.
      * - HAL initialization, this also initializes the configured device drivers
@@ -14,9 +13,11 @@ int main(void) {
 
     halInit();
     chSysInit();
+}
 
-    chThdCreateStatic(waCardReader, sizeof(waCardReader), NORMALPRIO, CardReader, NULL);
-
+#ifndef TEST
+int main(void) {
+    deadlock_init();
     // This function is now the Idle thread. It must never exit and it must implement
     // an infinite loop.
     while(true) {
@@ -25,3 +26,4 @@ int main(void) {
         __asm__ __volatile__("");
     }
 }
+#endif

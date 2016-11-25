@@ -8,3 +8,4 @@ install:
 script:
   - make
   - cd docs && make html && cd ..
+  - make test

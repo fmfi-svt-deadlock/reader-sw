@@ -107,7 +107,16 @@ endif
 # Imported source files and paths
 # Warning: order is important!
 CHIBIOS = deps/ChibiOS
-CUSTOM_HAL = hal
+UNITY = deps/Unity/src/
+FFF   = deps/fff/
+CUSTOM_HAL = hal/
+TEST_PATH = test/
+TEST_BUILD = build/test/out/
+TEST_RUNNERS = build/test/runners/
+TEST_OBJS = build/test/objs/
+TEST_RESULTS = build/test/results/
+TEST_BUILD_PATHS = $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
+SOURCE = src/
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
 # HAL-OSAL files (optional).
@@ -132,7 +141,10 @@ CSRC = $(STARTUPSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
        $(TESTSRC) \
-       $(shell find src/ -type f -name '*.c')
+       $(shell find $(SOURCE) -type f -name '*.c')
+
+# C test sources.
+TEST_CSRC = $(shell find $(TEST_PATH) -type f -name '*-test.c')
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -192,6 +204,13 @@ SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex
 BIN  = $(CP) -O binary
 
+TEST_TRGT   =
+TEST_CC     = $(TEST_TRGT)gcc
+TEST_LD     = $(TEST_TRGT)gcc
+TEST_INCDIR = $(INCDIR) src/ $(FFF)
+TEST_INCPARAMS = $(foreach d, $(TEST_INCDIR), -I$d)
+TEST_CFLAGS = -I. -I$(UNITY) $(TEST_INCPARAMS) -DTEST
+
 # ARM-specific options here
 AOPT =
 
@@ -246,3 +265,85 @@ debug: build/deadlock-reader.elf
 	if [ -z "`pgrep st-util`"]; then st-util 2> /dev/null & fi
 	arm-none-eabi-gdb build/deadlock-reader.elf -ex "target extended :4242"
 	pkill st-util
+
+#
+#
+##############################################################################
+
+##############################################################################
+# Start of Unit Testing with Unity rules
+#
+
+$(TEST_BUILD):
+	@mkdir -p $(TEST_BUILD)
+
+$(TEST_OBJS):
+	@mkdir -p $(TEST_OBJS)
+
+$(TEST_RESULTS):
+	@mkdir -p $(TEST_RESULTS)
+
+$(TEST_RUNNERS):
+	@mkdir -p $(TEST_RUNNERS)
+
+$(TEST_RUNNERS)%-test-runner.c:: $(TEST_PATH)%-test.c
+	@echo 'Generating runner for $@'
+	@mkdir -p `dirname $@`
+	@ruby $(UNITY)../auto/generate_test_runner.rb $< $@
+
+$(TEST_OBJS)unity.o:: $(UNITY)unity.c $(UNITY)unity.h
+	@echo 'Compiling Unity'
+	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
+
+$(TEST_OBJS)%-test.o:: $(TEST_PATH)%-test.c
+	@echo 'Compiling test $<'
+	@mkdir -p `dirname $@`
+	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
+
+$(TEST_OBJS)%-test-runner.o: $(TEST_RUNNERS)%-test-runner.c
+	@echo 'Compiling test runner $<'
+	@mkdir -p `dirname $@`
+	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
+
+$(TEST_OBJS)%.o:: $(SOURCE)%.c
+	@echo 'Compiling $<'
+	@mkdir -p `dirname $@`
+	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
+
+$(TEST_BUILD)%-test.out: $(TEST_OBJS)%-test.o $(TEST_OBJS)%.o $(TEST_OBJS)unity.o $(TEST_OBJS)%-test-runner.o
+	@echo 'Linking test $@'
+	@mkdir -p `dirname $@`
+	@$(TEST_LD) -o $@ $^
+
+$(TEST_RESULTS)%.result: $(TEST_BUILD)%-test.out
+	@echo
+	@echo '----- Running test $<:'
+	@mkdir -p `dirname $@`
+	@-./$< > $@ 2>&1
+	@cat $@
+
+RESULTS = $(patsubst $(TEST_PATH)%-test.c,$(TEST_RESULTS)%.result,$(TEST_CSRC))
+TEST_EXECS = $(patsubst $(TEST_RESULTS)%.result,$(TEST_BUILD)%-test.out,$(RESULTS))
+
+.PHONY: test run-tests clean-tests
+
+run-tests: $(TEST_BUILD_PATHS) $(TEST_EXECS) $(RESULTS)
+	@echo
+	@echo "----- SUMMARY -----"
+	@echo "PASS:   `for i in $(RESULTS); do grep -s PASS $$i; done | wc -l`"
+	@echo "IGNORE: `for i in $(RESULTS); do grep -s IGNORE $$i; done | wc -l`"
+	@echo "FAIL:   `for i in $(RESULTS); do grep -s FAIL $$i; done | wc -l`"
+	@echo
+	@echo "DONE"
+	@if [ "`for i in $(RESULTS); do grep -s FAIL $$i; done | wc -l`" != 0 ]; then \
+	exit 1; \
+	fi
+
+clean-tests:
+	@rm -rf $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
+
+test: run-tests clean-tests
+
+#
+#
+##############################################################################
