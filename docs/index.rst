@@ -10,6 +10,7 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
+   testing
    rfid_stack/index
 
 .. Indices and tables

@@ -15,7 +15,6 @@ void deadlock_init(void) {
     chSysInit();
 }
 
-#ifndef TEST
 int main(void) {
     deadlock_init();
     // This function is now the Idle thread. It must never exit and it must implement
@@ -26,4 +25,3 @@ int main(void) {
         __asm__ __volatile__("");
     }
 }
-#endif

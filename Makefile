@@ -117,7 +117,7 @@ TEST_OBJS = build/test/objs/
 TEST_RESULTS = build/test/results/
 TEST_BUILD_PATHS = $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
 # So that we can test both src/ and hal/
-TEST_ROOOT = ./
+TEST_ROOT = ./
 SOURCE = src/
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
@@ -146,7 +146,7 @@ CSRC = $(STARTUPSRC) \
        $(shell find $(SOURCE) -type f -name '*.c')
 
 # C test sources.
-TEST_CSRC = $(shell find $(TEST_PATH) -type f -name '*-test.c')
+TEST_CSRC = $(shell find $(TEST_PATH) -type f -regextype sed -regex '.*-test[0-9]*\.c')
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -288,7 +288,7 @@ $(TEST_RESULTS):
 $(TEST_RUNNERS):
 	@mkdir -p $(TEST_RUNNERS)
 
-$(TEST_RUNNERS)%-test-runner.c:: $(TEST_PATH)%-test.c
+$(TEST_RUNNERS)%-runner.c:: $(TEST_PATH)%.c
 	@echo 'Generating runner for $@'
 	@mkdir -p `dirname $@`
 	@ruby $(UNITY)../auto/generate_test_runner.rb $< $@
@@ -297,44 +297,47 @@ $(TEST_OBJS)unity.o:: $(UNITY)unity.c $(UNITY)unity.h
 	@echo 'Compiling Unity'
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
 
-$(TEST_OBJS)%-test.o:: $(TEST_PATH)%-test.c
+$(TEST_OBJS)%.o:: $(TEST_PATH)%.c
 	@echo 'Compiling test $<'
 	@mkdir -p `dirname $@`
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
 
-$(TEST_OBJS)%-test-runner.o: $(TEST_RUNNERS)%-test-runner.c
+$(TEST_OBJS)%-runner.o: $(TEST_RUNNERS)%-runner.c
 	@echo 'Compiling test runner $<'
 	@mkdir -p `dirname $@`
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
 
-$(TEST_OBJS)%.o:: $(TEST_ROOT)%.c
+$(TEST_OBJS)%-under_test.o: $(TEST_ROOT)%.c
 	@echo 'Compiling $<'
 	@mkdir -p `dirname $@`
 	@$(TEST_CC) $(TEST_CFLAGS) -c $< -o $@
+	@objcopy --weaken $@
 
-$(TEST_BUILD)%-test.out: $(TEST_OBJS)%-test.o $(TEST_OBJS)%.o $(TEST_OBJS)unity.o $(TEST_OBJS)%-test-runner.o
+.SECONDEXPANSION:
+FILE_UNDER_TEST := sed -e 's|$(TEST_BUILD)\(.*\)-test[0-9]*\.out|$(TEST_OBJS)\1-under_test.o|'
+$(TEST_BUILD)%.out: $$(shell echo $$@ | $$(FILE_UNDER_TEST)) $(TEST_OBJS)%.o $(TEST_OBJS)unity.o $(TEST_OBJS)%-runner.o
 	@echo 'Linking test $@'
 	@mkdir -p `dirname $@`
 	@$(TEST_LD) -o $@ $^
 
-$(TEST_RESULTS)%.result: $(TEST_BUILD)%-test.out
+$(TEST_RESULTS)%.result: $(TEST_BUILD)%.out
 	@echo
 	@echo '----- Running test $<:'
 	@mkdir -p `dirname $@`
 	@-./$< > $@ 2>&1
 	@cat $@
 
-RESULTS = $(patsubst $(TEST_PATH)%-test.c,$(TEST_RESULTS)%.result,$(TEST_CSRC))
-TEST_EXECS = $(patsubst $(TEST_RESULTS)%.result,$(TEST_BUILD)%-test.out,$(RESULTS))
+RESULTS = $(patsubst $(TEST_PATH)%.c,$(TEST_RESULTS)%.result,$(TEST_CSRC))
+TEST_EXECS = $(patsubst $(TEST_RESULTS)%.result,$(TEST_BUILD)%.out,$(RESULTS))
 
-.PHONY: test run-tests clean-tests
+.PHONY: test run-tests clean-tests print_tcsrc
 
 run-tests: $(TEST_BUILD_PATHS) $(TEST_EXECS) $(RESULTS)
 	@echo
 	@echo "----- SUMMARY -----"
-	@echo "PASS:   `for i in $(RESULTS); do grep -s PASS $$i; done | wc -l`"
-	@echo "IGNORE: `for i in $(RESULTS); do grep -s IGNORE $$i; done | wc -l`"
-	@echo "FAIL:   `for i in $(RESULTS); do grep -s FAIL $$i; done | wc -l`"
+	@echo "PASS:   `for i in $(RESULTS); do grep -s :PASS $$i; done | wc -l`"
+	@echo "IGNORE: `for i in $(RESULTS); do grep -s :IGNORE $$i; done | wc -l`"
+	@echo "FAIL:   `for i in $(RESULTS); do grep -s :FAIL $$i; done | wc -l`"
 	@echo
 	@echo "DONE"
 	@if [ "`for i in $(RESULTS); do grep -s FAIL $$i; done | wc -l`" != 0 ]; then \
@@ -345,6 +348,9 @@ clean-tests:
 	@rm -rf $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
 
 test: run-tests clean-tests
+
+print_tcsrc:
+	echo $(TEST_CSRC)
 
 #
 #
