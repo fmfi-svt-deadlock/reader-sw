@@ -16,6 +16,7 @@ Main functionality of the Reader is to, of course, read an RFID card. To accompl
 .. toctree::
     :maxdepth: 2
 
+    hal_mfrc522
     hal_abstract_iso14443_pcd
     hal_abstract_CRCard
 ```
