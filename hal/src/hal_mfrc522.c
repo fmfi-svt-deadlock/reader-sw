@@ -203,7 +203,8 @@ static void read_register_burst(Mfrc522Driver *mdp, Mfrc522Register reg,
 
             uint8_t txbuf[length+1];
             txbuf[0] = 0x80 | ((reg & 0x3F) << 1);
-            for(uint8_t i = 0; i < length; i++) {
+            uint8_t i;
+            for(i = 0; i < length; i++) {
                 txbuf[i+1] = 0x80 | ((reg & 0x3F) << 1);
             }
 
