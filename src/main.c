@@ -1,8 +1,21 @@
 #include "ch.h"
 #include "hal.h"
+#include "hal_custom.h"
 #include "main.h"
 
-void deadlock_init(void) {
+
+static THD_WORKING_AREA(init_thread_wa, 256);
+static THD_FUNCTION(init_thread, p) {
+    (void)p;
+
+    // This is the "init" thread. It initializes high-level devices which
+    // require the OS to run and spawns other threads
+
+    devicesInit();
+}
+
+int main(void) {
+
     /*
      * System initializations.
      * - HAL initialization, this also initializes the configured device drivers
@@ -12,11 +25,13 @@ void deadlock_init(void) {
      */
 
     halInit();
+    halCustomInit();
     chSysInit();
-}
 
-int main(void) {
-    deadlock_init();
+    // Start the "init" thread
+    chThdCreateStatic(init_thread_wa, sizeof(init_thread_wa),
+                      NORMALPRIO + 1, init_thread, NULL);
+
     // This function is now the Idle thread. It must never exit and it must implement
     // an infinite loop.
     while(true) {
