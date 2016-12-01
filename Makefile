@@ -264,7 +264,7 @@ flash: build/deadlock-reader.bin
 	st-flash write build/deadlock-reader.bin $(FW_FLASH_ADDRESS)
 
 debug: build/deadlock-reader.elf
-	if [ -z "`pgrep st-util`"]; then st-util 2> /dev/null & fi
+	pgrep st-util || st-util &
 	arm-none-eabi-gdb build/deadlock-reader.elf -ex "target extended :4242"
 	pkill st-util
 
