@@ -184,9 +184,10 @@
                                      PIN_AFIO_AF(GPIOA_RFID_MISO, 0) |      \
                                      PIN_AFIO_AF(GPIOA_RFID_MOSI, 0))
 
-#define VAL_GPIOA_AFRH              (AFIO_DEFAULT_0 |                       \
-                                   /*PIN_AFIO_AF(GPIOA_RDR_TXD, 1) |      \ (This would block SWD) */ \
-                                     PIN_AFIO_AF(GPIOA_RDR_RXD, 1))
+// TODO incorrect setting so that SWDIO works!
+#define VAL_GPIOA_AFRH              (AFIO_DEFAULT_0 |                         \
+                                     PIN_AFIO_AF(GPIOA_RDR_TXD, 0) |          \
+                                     PIN_AFIO_AF(GPIOA_RDR_RXD, 0))
 
 /*
  * GPIOB setup
@@ -264,7 +265,7 @@
 #define SPI_MFRC522_VAL_CR2         (SPI_CR2_DS_2 |                         \
                                      SPI_CR2_DS_1 |                         \
                                      SPI_CR2_DS_0)
-// This is the initializer of platform-specific SPIConfig structure.
+// This is the initializer of a platform-specific SPIConfig structure.
 #define SPI_MFRC522_HAL_CONFIG      {NULL,                                  \
                                      SPI_MFRC522_CS_PORT,                   \
                                      SPI_MFRC522_CS_PIN,                    \
@@ -276,6 +277,7 @@
 extern "C" {
 #endif
   void boardInit(void);
+  void devicesInit(void);
 #ifdef __cplusplus
 }
 #endif

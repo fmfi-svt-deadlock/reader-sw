@@ -44,6 +44,8 @@
 */
 
 #include "hal.h"
+#include "hal_custom.h"
+#include "board_devices.h"
 
 #if HAL_USE_PAL || defined(__DOXYGEN__)
 /**
@@ -91,6 +93,8 @@
 };
 #endif
 
+Mfrc522Driver MFRC522;
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
@@ -105,4 +109,19 @@ void __early_init(void) {
  * @todo    Add your board-specific code, if any.
  */
 void boardInit(void) {
+
+}
+
+/**
+ * @brief      Initialization of devices on this board after ChibiOS has been
+ *             initialized
+ */
+void devicesInit(void) {
+    // Start the SPI driver
+    static const SPIConfig mfrc522_spi_config = SPI_MFRC522_HAL_CONFIG;
+    spiStart(&SPI_MFRC522, &mfrc522_spi_config);
+
+    // Initialize MFRC522 object and start the MFRC522 driver
+    mfrc522ObjectInitSPI(&MFRC522, &SPI_MFRC522);
+    mfrc522Start(&MFRC522, NULL);
 }
