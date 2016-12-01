@@ -18,12 +18,6 @@
 /* Driver constants.                                                         */
 /*===========================================================================*/
 
-typedef enum {
-	MFRC522_CONN_SPI,
-	MFRC522_CONN_I2C,
-	MFRC522_CONN_SERIAL
-} mfrc522_conntype_t;
-
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -84,7 +78,17 @@ typedef struct {
 	/**
 	 * How is the MFRC522 connected. Don't modify this value.
 	 */
-	mfrc522_conntype_t connection_type;
+	enum mfrc522_conntype_t {
+#if MFRC522_USE_SPI || defined(__DOXYGEN__)
+		MFRC522_CONN_SPI,
+#endif
+#if MFRC522_USE_I2C || defined(__DOXYGEN__)
+		MFRC522_CONN_I2C,
+#endif
+#if MFRC522_USE_UART || defined(__DOXYGEN__)
+		MFRC522_CONN_SERIAL,
+#endif
+	} connection_type;
 
 	/**
 	 * @brief Pointer to a given interface driver. Don't modify this value.

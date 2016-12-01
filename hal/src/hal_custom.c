@@ -37,7 +37,8 @@
  * @init
  */
 void halCustomInit(void) {
-
+	//TODO conditionally
+	mfrc522Init();
 }
 
 #endif /* HAL_USE_CUSTOM */
