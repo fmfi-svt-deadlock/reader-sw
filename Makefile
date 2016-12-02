@@ -32,6 +32,7 @@ endif
 ifeq ($(USE_LTO),)
   # This is turned off as a workaround of a gcc 5.3.0 bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65380)
   # The bug is still present in gcc 6.1.1
+  # Finally not present in 6.2.0, consider turning this back on again
   USE_LTO = no
 endif
 

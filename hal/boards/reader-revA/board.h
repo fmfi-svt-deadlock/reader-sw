@@ -172,11 +172,12 @@
                                      PIN_OSPEED_HIGH(GPIOA_RDR_RXD))
 
 #define VAL_GPIOA_PUPDR             (PUPDR_DEFAULT_FLOATING |               \
-                                     PIN_PUPDR_PULLDOWN(GPIOA_RFID_IRQ) |   \
+                                     PIN_PUPDR_FLOATING(GPIOA_RFID_IRQ) |   \
                                      PIN_PUPDR_PULLUP(GPIOA_SWDIO) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOA_SWCLK))
 
 #define VAL_GPIOA_ODR               (ODR_DEFAULT_LOW |                      \
+                                     PIN_ODR_HIGH(GPIOA_RFID_IRQ) |         \
                                      PIN_ODR_HIGH(GPIOA_RFID_SS))
 
 #define VAL_GPIOA_AFRL              (AFIO_DEFAULT_0 |                       \
@@ -271,6 +272,8 @@
                                      SPI_MFRC522_CS_PIN,                    \
                                      SPI_MFRC522_VAL_CR1,                   \
                                      SPI_MFRC522_VAL_CR2 }
+
+#define MFRC522_INTERRUPT_CHANNEL   0
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus

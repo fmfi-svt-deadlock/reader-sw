@@ -11,7 +11,7 @@ typedef enum {
     Reserved00          = 0x00,
     CommandReg          = 0x01,
     ComIEnReg           = 0x02,
-    DivlEnReg           = 0x03,
+    DivIEnReg           = 0x03,
     CommIrqReg          = 0x04,
     DivIrqReg           = 0x05,
     ErrorReg            = 0x06,
@@ -82,6 +82,13 @@ typedef enum {
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
+void ext_callback(EXTDriver *extp, expchannel_t);
+
+const EXTChannelConfig interrupt_config = {
+    EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOA,
+    &ext_callback
+};
+
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
@@ -115,7 +122,7 @@ static void write_register(Mfrc522Driver *mdp, Mfrc522Register reg,
 #endif
 #if MFRC522_USE_UART
         case MFRC522_CONN_SERIAL:
-            osalSysHald("MFRC522: Serial not implemented!");
+            osalSysHalt("MFRC522: Serial not implemented!");
             break;
 #endif
     }
@@ -151,7 +158,7 @@ static uint8_t read_register(Mfrc522Driver *mdp, Mfrc522Register reg) {
 #endif
 #if MFRC522_USE_UART
         case MFRC522_CONN_SERIAL:
-            osalSysHald("MFRC522: Serial not implemented!");
+            osalSysHalt("MFRC522: Serial not implemented!");
             return 0;
             break;
 #endif
@@ -186,7 +193,7 @@ static void write_register_burst(Mfrc522Driver *mdp, Mfrc522Register reg,
 #endif
 #if MFRC522_USE_UART
         case MFRC522_CONN_SERIAL:
-            osalSysHald("MFRC522: Serial not implemented!");
+            osalSysHalt("MFRC522: Serial not implemented!");
             break;
 #endif
     }
@@ -222,10 +229,14 @@ static void read_register_burst(Mfrc522Driver *mdp, Mfrc522Register reg,
 #endif
 #if MFRC522_USE_UART
         case MFRC522_CONN_SERIAL:
-            osalSysHald("MFRC522: Serial not implemented!");
+            osalSysHalt("MFRC522: Serial not implemented!");
             break;
 #endif
     }
+}
+
+void ext_callback(EXTDriver *extp, expchannel_t channel) {
+    // TODO implement this callback.
 }
 
 /*===========================================================================*/
@@ -233,42 +244,62 @@ static void read_register_burst(Mfrc522Driver *mdp, Mfrc522Register reg,
 /*===========================================================================*/
 
 void mfrc522Init(void) {
-
-}
-
-void mfrc522DefaultConfig(Mfrc522Config *config) {
-
+    // Nothing to do.
 }
 
 #if MFRC522_USE_SPI || defined(__DOXYGEN__)
 void mfrc522ObjectInitSPI(Mfrc522Driver *mdp, SPIDriver *spip) {
     mdp->connection_type = MFRC522_CONN_SPI;
     mdp->iface.spip = spip;
+    mdp->state = MFRC522_STOP;
 }
 #endif
 
 #if MFRC522_USE_I2C || defined(__DOXYGEN__)
 void mfrc522ObjectInitI2C(Mfrc522Driver *mdp, I2CDriver *i2cp) {
-
+    osalSysHalt("Not implemented!");
 }
 #endif
 
 #if MFRC522_USE_UART || defined(__DOXYGEN__)
 void mfrc522ObjectInitSerial(Mfrc522Driver *mdp, SerialDriver *sdp) {
-
+    osalSysHalt("Not implemented!");
 }
 #endif
 
-void mfrc522Start(Mfrc522Driver *mdp, Mfrc522Config *config) {
+void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
+    osalDbgCheck(mdp != NULL);
+    osalDbgAssert(mdp->state == MFRC522_STOP, "Incorrect state!");
+    osalDbgCheck(config != NULL);
 
+    // Enable the MFRC522
+    mdp->reset_line = config->reset_line;
+    palSetLine(config->reset_line);
+    osalThreadSleepMicroseconds(40);  // Oscillator start-up time
+
+    // Interrupt handler setup
+    osalDbgCheck(config->extp != NULL);
+    mdp->extp = config->extp;
+    mdp->interrupt_channel = config->interrupt_channel;
+    extSetChannelMode(config->extp, config->interrupt_channel,
+                      &interrupt_config);
+    extChannelEnable(config->extp, config->interrupt_channel);
+
+    mdp->state = MFRC522_READY;
+
+    mfrc522Reconfig(mdp, config);
 }
 
-void mfrc522Reconfig(Mfrc522Driver *mdp, Mfrc522Config *config) {
+void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
 
 }
 
 void mfrc522Stop(Mfrc522Driver *mdp) {
-
+    osalDbgCheck(mdp != NULL);
+    osalDbgAssert(mdp->state == MFRC522_READY, "Incorrect state!");
+    extChannelDisable(mdp->extp, mdp->interrupt_channel);
+    palClearLine(mdp->reset_line);
+    mdp->state = MFRC522_STOP;
 }
 
 #endif /* HAL_USE_MFRC522 == TRUE */

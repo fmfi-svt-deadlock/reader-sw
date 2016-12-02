@@ -93,6 +93,56 @@
 };
 #endif
 
+uint32_t interrupt_flag = 0;
+
+EXTConfig extcfg = {
+  {
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_DISABLED, NULL}
+  }
+};
+
+const Mfrc522Config mfrc522_config = {
+    &EXTD1,                                 // EXT driver
+    MFRC522_INTERRUPT_CHANNEL,              // EXT interrupt channel
+    (void*)PAL_LINE(GPIOA, GPIOA_RFID_RST), // RST line
+    true,                                   // MFIN polarity
+    false,                                  // inverse modulation
+    0x80,                                   // TX Control Reg value
+    MFRC522_DRSEL_MPE,                      // Driver input select
+    MFRC522_MFSEL_3STATE,                   // MFOUT input select
+    MFRC522_UINSEL_ANALOG,                  // Contactless UART input select
+    8,                                      // Minimum signal strength
+    4,                                      // Minimum collision strength
+    0x4D,                                   // Demodulator settings
+    MFRC522_GAIN_33,                        // Receiver gain
+    8,                                      // Transmit power N
+    8,                                      // Modulation index N
+    32,                                     // Transmit power P
+    32                                      // Modulation index P
+};
+
 Mfrc522Driver MFRC522;
 
 /**
@@ -121,7 +171,12 @@ void devicesInit(void) {
     static const SPIConfig mfrc522_spi_config = SPI_MFRC522_HAL_CONFIG;
     spiStart(&SPI_MFRC522, &mfrc522_spi_config);
 
+    // Start the EXT driver
+    extStart(&EXTD1, &extcfg);
+
     // Initialize MFRC522 object and start the MFRC522 driver
     mfrc522ObjectInitSPI(&MFRC522, &SPI_MFRC522);
-    mfrc522Start(&MFRC522, NULL);
+    mfrc522Start(&MFRC522, &mfrc522_config);
+
+    mfrc522Reconfig(&MFRC522, NULL);
 }

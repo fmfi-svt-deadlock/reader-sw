@@ -5,7 +5,14 @@
  *          supports the MFRC522 chip connected over various interfaces.
  *          It exports an Pcd object for use by other layers.
  *
- * @addtogroup ISO14443_PICC
+ * Note: This driver requires the EXT driver to be enabled **and configured
+ * with non-`const` EXTConfig strcture (as opposed to one documented by
+ * function extStart)**!
+ *
+ * This driver invokes the extSetChannelMode function, see its docs for
+ * explanation.
+ *
+ * @addtogroup HAL_MFRC522
  * @{
  */
 
@@ -17,6 +24,16 @@
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
+
+/**
+ * State of this driver. Please note that this is a subset of ISO14443 PCD
+ * states.
+ */
+typedef enum {
+	MFRC522_UNINT,
+	MFRC522_STOP,
+	MFRC522_READY
+} mfrc522state_t;
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -50,6 +67,8 @@
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
+#if (HAL_USE_MFRC522 == TRUE) || defined(__DOXYGEN__)
+
 #if MFRC522_USE_SPI && !HAL_USE_SPI
 #error "This driver is configured to use SPI, but HAL is not!"
 #endif
@@ -61,6 +80,20 @@
 #if MFRC522_USE_UART && !HAL_USE_UART
 #error "This driver is configured to use UART, but HAL is not!"
 #endif
+
+#if !HAL_USE_EXT
+#error "MFRC522 driver requires the EXT subsystem!"
+#endif
+
+#if !HAL_USE_PAL
+#error "MFRC522 driver requires the PAL subsystem!"
+#endif
+
+#if !MFRC522_USE_SPI && !MFRC522_USE_I2C && !MFRC522_USE_UART
+#error "MFRC522 driver is enabled, but no interface is configured."
+#endif
+
+#endif // HAL_USE_MFRC522
 
 /*===========================================================================*/
 /* Driver data structures and types.                                         */
@@ -74,6 +107,11 @@ typedef struct {
 	 * Abstract Pcd structure to be used with other parts of this stack
 	 */
 	Pcd pcd;
+
+	/**
+	 * Driver state
+	 */
+	mfrc522state_t state;
 
 	/**
 	 * How is the MFRC522 connected. Don't modify this value.
@@ -104,6 +142,21 @@ typedef struct {
 		SerialDriver *sdp;
 #endif
 	} iface;
+
+	/**
+	 * EXT driver to use for handling MFRC522-issued interrupts
+	 */
+	EXTDriver *extp;
+
+	/**
+	 * EXT channel to which the IRQ pin is connected
+	 */
+	expchannel_t interrupt_channel;
+
+	/**
+	 * PAL line, which when set low resets the connected MFRC522
+	 */
+	void *reset_line;
 } Mfrc522Driver;
 
 /**
@@ -117,11 +170,29 @@ typedef struct {
  * If you need to modify something consult the MFRC522 Datasheet.
  */
 typedef struct {
+
+	/**
+	 * EXT driver to use for handling MFRC522-issued interrupts
+	 */
+	EXTDriver *extp;
+
+	/**
+	 * EXT channel to which the IRQ pin is connected
+	 */
+	expchannel_t interrupt_channel;
+
+	/**
+	 * PAL line, which when set low resets the connected MFRC522
+	 */
+	void *reset_line;
+
 	/**
 	 * @brief Defines polarity of pin MFIN
 	 *
 	 * true: MFIN is active HIGH
 	 * false: MFIN is active LOW
+	 *
+	 * Default: true
 	 *
 	 * MFRC522 Datasheet page 48
 	 */
@@ -130,6 +201,8 @@ typedef struct {
 	/**
 	 * @brief Modulation of transmitted data should be inverted
 	 *
+	 * Default: false
+	 *
 	 * MFRC522 Datasheet page 49
 	 */
 	bool inverse_modulation;
@@ -137,12 +210,16 @@ typedef struct {
 	/**
 	 * @brief Value of the transmission control register
 	 *
+	 * Default: 0x80
+	 *
 	 * MFRC522 Datasheet page 50
 	 */
 	uint8_t tx_control_reg;
 
 	/**
 	 * @brief Selects the input of drivers TX1 and TX2
+	 *
+	 * Default: MFRC522_DRSEL_MPE
 	 *
 	 * MFRC522 Datasheet page 51
 	 */
@@ -161,6 +238,8 @@ typedef struct {
 
 	/**
 	 * @brief Selects the input for pin MFOUT
+	 *
+	 * Default: MFRC522_MFSEL_3STATE
 	 *
 	 * MFRC522 Datasheet page 52
 	 */
@@ -183,7 +262,9 @@ typedef struct {
 	/**
 	 * @brief Selects the input of the contactless UART
 	 *
-	 * MFRC522 Datasheet page 53
+	 * Default: MFRC522_UINSEL_ANALOG
+	 *
+	 * MFRC522 Datasheet page 52
 	 */
 	enum cl_uart_in_sel_t {
 		MFRC522_UINSEL_LOW      = 0b00,	///< constant LOW
@@ -199,6 +280,8 @@ typedef struct {
 	/**
 	 * @brief Minimum signal strength which will be accepted by the decoder
 	 *
+	 * Default: 8
+	 *
 	 * MFRC522 Datasheet page 53
 	 */
 	uint8_t min_rx_signal_strength;
@@ -211,6 +294,8 @@ typedef struct {
      * generate a bit-collision relative to the amplitude of the stronger
 	 * half-bit.
 	 *
+	 * Default: 4
+	 *
 	 * MFRC522 Datasheet page 53
 	 */
 	uint8_t min_rx_collision_level;
@@ -218,12 +303,16 @@ typedef struct {
 	/**
 	 * @brief Demodulator settings
 	 *
+	 * Default: 0x4D
+	 *
 	 * MFRC522 Datasheet page 53
 	 */
 	uint8_t demod_reg;
 
 	/**
 	 * @brief      Gain of the receiver
+	 *
+	 * Default: MFRC522_GAIN_33
 	 *
 	 * MFRC522 Datasheet page 59
 	 */
@@ -240,6 +329,8 @@ typedef struct {
 	 * @brief Conductance of the output n-driver (CWGsN) which can be used to
 	 *        regulate the output power
 	 *
+	 * Default: 8
+	 *
 	 * MFRC522 Datasheet page 59
 	 */
 	uint8_t transmit_power_n;
@@ -247,6 +338,8 @@ typedef struct {
 	/**
 	 * @brief Conductance of the output n-driver (ModGsN) which can be used to
 	 *        regulate the modulation index
+	 *
+	 * Default: 8
 	 *
 	 * MFRC522 Datasheet page 59
 	 */
@@ -256,6 +349,8 @@ typedef struct {
 	 * @brief Conductance of the output p-driver (CWGsP) which can be used to
 	 *        regulate the output power
 	 *
+	 * Default: 32
+	 *
 	 * MFRC522 Datasheet page 60
 	 */
 	uint8_t transmit_power_p;
@@ -263,6 +358,8 @@ typedef struct {
 	/**
 	 * @brief Conductance of the output n-driver (ModGsP) which can be used to
 	 *        regulate the modulation index
+	 *
+	 * Default: 32
 	 *
 	 * MFRC522 Datasheet page 60
 	 */
@@ -297,8 +394,8 @@ void mfrc522ObjectInitI2C(Mfrc522Driver *mdp, I2CDriver *i2cp);
 void mfrc522ObjectInitSerial(Mfrc522Driver *mdp, SerialDriver *sdp);
 #endif
 
-void mfrc522Start(Mfrc522Driver *mdp, Mfrc522Config *config);
-void mfrc522Reconfig(Mfrc522Driver *mdp, Mfrc522Config *config);
+void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config);
+void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config);
 void mfrc522Stop(Mfrc522Driver *mdp);
 
 #ifdef __cplusplus
