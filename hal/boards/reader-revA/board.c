@@ -177,6 +177,4 @@ void devicesInit(void) {
     // Initialize MFRC522 object and start the MFRC522 driver
     mfrc522ObjectInitSPI(&MFRC522, &SPI_MFRC522);
     mfrc522Start(&MFRC522, &mfrc522_config);
-
-    mfrc522Reconfig(&MFRC522, NULL);
 }

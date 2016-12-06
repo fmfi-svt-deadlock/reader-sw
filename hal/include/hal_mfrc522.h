@@ -280,6 +280,8 @@ typedef struct {
 	/**
 	 * @brief Minimum signal strength which will be accepted by the decoder
 	 *
+	 * Only 4 lowest bits are taken into account.
+	 *
 	 * Default: 8
 	 *
 	 * MFRC522 Datasheet page 53
@@ -293,6 +295,8 @@ typedef struct {
      * reached by the weaker half-bit of the Manchester encoded signal to
      * generate a bit-collision relative to the amplitude of the stronger
 	 * half-bit.
+	 *
+	 * Only 3 lowest bits are taken into account.
 	 *
 	 * Default: 4
 	 *

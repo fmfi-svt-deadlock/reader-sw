@@ -89,6 +89,48 @@ const EXTChannelConfig interrupt_config = {
     &ext_callback
 };
 
+// ------ REGISTER DEFINES -------
+// This list may be incomplete and is expanded on a need-to-use basis.
+// Refer to the MFRC522 Datasheet.
+
+// TODO this should be complete and more logically organized one day
+
+#define ModeReg_TxWaitRF                5
+#define ModeReg_PolMFin                 3
+#define ModeReg_CRCPreset               0
+#define ModeReg_CRCPreset_0000          0b00
+#define ModeReg_CRCPreset_6363          0b01
+#define ModeReg_CRCPreset_A671          0b10
+#define ModeReg_CRCPreset_FFFF          0b11
+#define Mask_ModeReg_CRCPreset          (0x3 << ModeReg_CRCPreset)
+
+#define TxModeReg_InvMod                3
+
+#define TxSelReg_DriverSel              4
+#define Mask_TxSelReg_DriverSel         (0x3 << TxSelReg_DriverSel)
+#define TxSelReg_MFOutSel               0
+#define Mask_TxSelReg_MFOutSel          (0xF << TxSelReg_MFOutSel)
+
+#define RxSelReg_UARTSel                6
+#define Mask_RxSelReg_UARTSel           (0x3 << RxSelReg_UARTSel)
+
+#define RxThresholdReg_MinLevel         4
+#define Mask_RxThresholdReg_MinLevel    (0xF << RxThresholdReg_MinLevel)
+#define RxThresholdReg_CollLevel        0
+#define Mask_RxThresholdReg_CollLevel   (0x7 << RxThresholdReg_CollLevel)
+
+#define RFCfgReg_RxGain                 4
+#define Mask_RFCfgReg_RxGain            (0x7 << RFCfgReg_RxGain)
+
+#define GsNReg_CWGsN                    4
+#define GsNReg_ModGsN                   0
+
+#define CWGsPReg_CWGsP                  0
+#define Mask_CWGsPReg_CWGsP             (0x3F << CWGsPReg_CWGsP)
+
+#define ModGsPReg_ModGsP                0
+#define Mask_ModGsPReg_ModGsP           (0x3F << ModGsPReg_ModGsP)
+
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
@@ -239,6 +281,13 @@ void ext_callback(EXTDriver *extp, expchannel_t channel) {
     // TODO implement this callback.
 }
 
+static void write_register_bitmask(Mfrc522Driver *mdp, Mfrc522Register reg,
+                        uint8_t bitmask, uint8_t data) {
+    uint8_t reg_value = read_register(mdp, reg) & ~bitmask;
+    write_register(mdp, reg, reg_value | data);
+}
+
+
 /*===========================================================================*/
 /* Driver exported functions.                                                */
 /*===========================================================================*/
@@ -291,7 +340,46 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
 }
 
 void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
+    osalDbgCheck(mdp != NULL);
+    osalDbgAssert(mdp->state == MFRC522_READY, "Incorrect state!");
+    osalDbgCheck(config != NULL);
 
+    // TODO maybe nicer code formatting?
+
+    write_register_bitmask(mdp, ModeReg, (ModeReg_PolMFin | Mask_ModeReg_CRCPreset),
+                           (config->MFIN_polarity ? 1 : 0 << ModeReg_PolMFin) |
+                           (ModeReg_CRCPreset_6363 << ModeReg_CRCPreset));
+
+    write_register_bitmask(mdp, TxModeReg, TxModeReg_InvMod,
+                           (config->inverse_modulation ? 1 : 0 << TxModeReg_InvMod));
+
+    write_register(mdp, TxControlReg, config->tx_control_reg);
+
+    write_register_bitmask(mdp, TxSelReg, (Mask_TxSelReg_DriverSel | Mask_TxSelReg_MFOutSel),
+                           (config->driver_input_select << TxSelReg_DriverSel) |
+                           (config->mfout_select << TxSelReg_MFOutSel));
+
+    write_register_bitmask(mdp, RxSelReg, Mask_RxSelReg_UARTSel,
+                           (config->cl_uart_in_sel << RxSelReg_UARTSel));
+
+    write_register_bitmask(mdp, RxThresholdReg, (Mask_RxThresholdReg_CollLevel | Mask_RxThresholdReg_CollLevel),
+                           ((config->min_rx_signal_strength & 0xF) << RxThresholdReg_MinLevel) |
+                           ((config->min_rx_collision_level & 0x7) << RxThresholdReg_CollLevel));
+
+    write_register(mdp, DemodReg, config->demod_reg);
+
+    write_register_bitmask(mdp, RFCfgReg, Mask_RFCfgReg_RxGain,
+                           (config->receiver_gain) << RFCfgReg_RxGain);
+
+    write_register(mdp, GsNReg,
+                   ((config->transmit_power_n & 0xF) << GsNReg_CWGsN) |
+                   ((config->modulation_index_n & 0xF) << GsNReg_ModGsN));
+
+    write_register_bitmask(mdp, CWGsPReg, Mask_CWGsPReg_CWGsP,
+                           (config->transmit_power_p & 0x3F) << CWGsPReg_CWGsP);
+
+    write_register_bitmask(mdp, ModGsPReg, Mask_ModGsPReg_ModGsP,
+                           (config->modulation_index_p & 0x3F) << ModGsPReg_ModGsP);
 }
 
 void mfrc522Stop(Mfrc522Driver *mdp) {
