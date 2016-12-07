@@ -554,20 +554,23 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
 }
 
 pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
-                                         uint16_t *resp_length) {
+                                         uint16_t *resp_length,
+                                         uint16_t timeout_us) {
 
 }
 
 pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
-                                            uint16_t *resp_length) {
+                                            uint16_t *resp_length,
+                                            uint16_t timeout_us) {
 
 }
 
 pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
-                                            uint16_t *resp_length) {
+                                            uint16_t *resp_length,
+                                            uint16_t timeout_us) {
 
 }
 

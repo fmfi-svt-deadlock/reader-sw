@@ -296,6 +296,8 @@ struct BasePcdVMT {
      * @param      data        7 bits of data to be sent (MSB is ignored)
      * @param      resp_len_p  Length of the received response
      *                         (see #transceiveStandardFrameA).
+     * @param      timeout_us  Max number of microseconds to wait for a
+     *                         response.
      *
      * @retval     PCD_OK Transmission successful and response received.
      * @retval     PCD_OK_COLLISION Transmission successful and multiple
@@ -310,7 +312,8 @@ struct BasePcdVMT {
      * @retval     PCD_RX_OVERFLOW Too much data received.
      */
     pcdresult_t (*transceiveShortFrameA)(void *inst, uint8_t data,
-                                         uint16_t *resp_length);
+                                         uint16_t *resp_length,
+                                         uint16_t timeout_us);
 
 
     /**
@@ -337,6 +340,8 @@ struct BasePcdVMT {
      * @param      buffer      Bytes to send in a standard frame
      * @param      len         Size of the @p buffer
      * @param      resp_len_p  Size of received response
+     * @param      timeout_us  Max number of microseconds to wait for a
+     *                         response.
      *
      * @retval     PCD_OK Transmission successful and response received.
      * @retval     PCD_OK_COLLISION Transmission successful and multiple
@@ -354,7 +359,8 @@ struct BasePcdVMT {
      */
     pcdresult_t (*transceiveStandardFrameA)(void *inst, uint8_t* buffer,
                                             uint16_t length,
-                                            uint16_t *resp_length);
+                                            uint16_t *resp_length,
+                                            uint16_t timeout_us);
 
     /**
      * @brief      Transmits the first part of an 'Anticollision Frame' and blocks
@@ -381,6 +387,8 @@ struct BasePcdVMT {
      * @param      n_last_bits  Number of valid bits in the last byte to be
      *                          transmitted. 0 means the whole byte is valid.
      * @param      resp_len_p   Size of the received response
+     * @param      timeout_us  Max number of microseconds to wait for a
+     *                         response.
      *
      * @retval     PCD_OK Transmission successful and response received.
      * @retval     PCD_OK_COLLISION Transmission successful and multiple
@@ -399,7 +407,8 @@ struct BasePcdVMT {
     pcdresult_t (*transceiveAnticollFrameA)(void *inst, uint8_t* buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
-                                            uint16_t *resp_length);
+                                            uint16_t *resp_length,
+                                            uint16_t timeout_us);
 
     /**
      * @brief      Gets (remaining) size of response stored in the buffer, if
@@ -528,21 +537,23 @@ typedef struct {
 /**
  * @see BasePcdVMT.transceiveShortFrameA
  */
-#define pcdTransceiveShortFrameA(ip, data, resp_len_p)                        \
-        ((ip)->vmt->transceiveShortFrameA(ip, data, resp_len_p))
+#define pcdTransceiveShortFrameA(ip, data, resp_len_p, timeout_us)            \
+        ((ip)->vmt->transceiveShortFrameA(ip, data, resp_len_p, timeout_us))
 
 /**
  * @see BasePcdVMT.transceiveStandardFrameA
  */
-#define pcdTransceiveStandardFrameA(ip, data, size, resp_len_p)               \
-        ((ip)->vmt->transceiveStandardFrame(ip, data, size, resp_len_p))
+#define pcdTransceiveStandardFrameA(ip, data, size, resp_len_p, timeout_us)   \
+        ((ip)->vmt->transceiveStandardFrame(ip, data, size, resp_len_p,       \
+                                            timeout_us))
 
 /**
  * @see BasePcdVMT.transceiveAnticollFrameA
  */
-#define pcdTransceiveAnticollFrameA(ip, data, size, n_last_bits, resp_len_p)  \
+#define pcdTransceiveAnticollFrameA(ip, data, size, n_last_bits, resp_len_p,  \
+                                    timeout_us)                               \
         ((ip)->vmt->transceiveAnticollFrameA(ip, data, size, n_last_bits,     \
-                                             resp_len_p))
+                                             resp_len_p, timeout_us))
 /**
  * @see BasePcdVMT.getResponseLengthA
  */
