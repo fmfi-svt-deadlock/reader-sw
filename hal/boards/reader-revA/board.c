@@ -144,6 +144,7 @@ const Mfrc522Config mfrc522_config = {
 };
 
 Mfrc522Driver MFRC522;
+Pcd *PCD = &(MFRC522.pcd);
 
 /**
  * @brief   Early initialization code.

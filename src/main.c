@@ -1,6 +1,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "hal_custom.h"
+#include "board_devices.h"
 #include "main.h"
 
 

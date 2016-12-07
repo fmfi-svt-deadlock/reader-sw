@@ -25,16 +25,6 @@
 /* Driver constants.                                                         */
 /*===========================================================================*/
 
-/**
- * State of this driver. Please note that this is a subset of ISO14443 PCD
- * states.
- */
-typedef enum {
-	MFRC522_UNINT,
-	MFRC522_STOP,
-	MFRC522_READY
-} mfrc522state_t;
-
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -322,7 +312,7 @@ typedef struct {
 	/**
 	 * Driver state
 	 */
-	mfrc522state_t state;
+	pcdstate_t state;
 
 	/**
 	 * How is the MFRC522 connected. Don't modify this value.

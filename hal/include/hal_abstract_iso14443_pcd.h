@@ -72,7 +72,8 @@
    .. graphviz::
 
      digraph card_state_transitions {
-        PCD_UNINIT -> PCD_RF_OFF [label="driver-specific\nactivation\nmethod"]
+        PCD_UNINIT -> PCD_STOP [label="driver-specific\ninit\nmethod"]
+        PCD_STOP -> PCD_RF_OFF [label="driver-specific\nactivation\nmethod"]
         PCD_RF_OFF -> PCD_READY [label="pcdActivateRFFieldAB()"]
         PCD_READY -> PCD_RF_OFF [label="pcdDeactivateRFFieldAB()"]
         PCD_READY -> PCD_ACTIVE [label="pcdTransceive*()"]
@@ -110,6 +111,7 @@
  */
 typedef enum {
     PCD_UNINT,                  /**< Not initialized                         */
+    PCD_STOP,                   /**< Initialized, not active.                */
     PCD_RF_OFF,                 /**< RF Field is off                         */
     PCD_READY,                  /**< Ready to transmit                       */
     PCD_ACTIVE                  /**< Transceiving                            */
@@ -505,12 +507,12 @@ typedef struct {
 /**
  * @see BasePcdVMT.activateRFAB
  */
-#define pcdActivateRFFAB(ip) ((ip)->vmt->activateRFAB(ip))
+#define pcdActivateRFAB(ip) ((ip)->vmt->activateRFAB(ip))
 
 /**
  * @see BasePcdVMT.deactivateRFAB
  */
-#define pcdDeactivateRFFAB(ip) ((ip)->vmt->deactivateRFAB(ip))
+#define pcdDeactivateRFAB(ip) ((ip)->vmt->deactivateRFAB(ip))
 
 /**
  * @see BasePcdVMT.getSupportedParamsAB

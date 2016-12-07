@@ -147,6 +147,9 @@ const EXTChannelConfig interrupt_config = {
 #define AutoTestReg_SelfTest            0
 #define AutoTestReg_SelfTestEnabled     0b1001
 
+#define TxControlReg_Tx1RFEn            0
+#define TxControlReg_Tx2RFEn            1
+
 // Self-test expected results
 // Version 0.0 (0x90)
 static const uint8_t selftest_result_ver00[] = {
@@ -351,13 +354,25 @@ static void write_register_bitmask(Mfrc522Driver *mdp, Mfrc522Register reg,
     write_register(mdp, reg, reg_value | data);
 }
 
+static void set_register_bits(Mfrc522Driver *mdp, Mfrc522Register reg,
+                              uint8_t data) {
+    write_register(mdp, reg, read_register(mdp, reg) | data);
+}
+
+static void clear_register_bits(Mfrc522Driver *mdp, Mfrc522Register reg,
+                                uint8_t data) {
+    write_register(mdp, reg, read_register(mdp, reg) & ~data);
+}
+
 static void command(Mfrc522Driver *mdp, Mfrc522Command command) {
     write_register(mdp, CommandReg, command);
 }
 
 // --- Extended functionality ---
 
+// TODO maybe support for this should be a compile-time option?
 bool mfrc522PerformSelftest(Mfrc522Driver *mdp) {
+    // TODO state check
     // Soft reset
     command(mdp, Command_SoftReset);
 
@@ -402,6 +417,113 @@ bool mfrc522PerformSelftest(Mfrc522Driver *mdp) {
     }
 }
 
+// --- Implementation of 'member functions' ---
+
+#define MEMBER_FUNCTION_CHECKS(inst)                                          \
+    osalDbgCheck(inst != NULL);                                               \
+    osalDbgCheck(((Pcd*)inst)->data != NULL);
+
+#define DEFINE_AND_SET_mdp(inst)                                              \
+    Mfrc522Driver *mdp = (Mfrc522Driver*)((Pcd*)inst)->data;
+
+#define CHECK_STATE(condition)                                                \
+    if (condition) { return PCD_BAD_STATE; }
+
+pcdstate_t mfrc522GetStateAB(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+
+    return mdp->state;
+}
+
+pcdresult_t mfrc522ActivateRFAB(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_RF_OFF);
+
+    set_register_bits(mdp, TxControlReg,
+                      (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+}
+
+pcdresult_t mfrc522DeactivateRFAB(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY);
+
+    clear_register_bits(mdp, TxControlReg,
+                        (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+}
+
+PcdSParams* mfrc522GetSupportedParamsAB(void *inst) {
+
+}
+
+pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
+                               pcdspeed_tx_t tx_spd, pcdmode_t mode) {
+
+}
+
+pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
+                                         uint16_t *resp_length) {
+
+}
+
+pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
+                                            uint16_t length,
+                                            uint16_t *resp_length) {
+
+}
+
+pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
+                                            uint16_t length,
+                                            uint8_t n_last_bits,
+                                            uint16_t *resp_length) {
+
+}
+
+uint16_t mfrc522GetResponseLengthA(void *inst) {
+
+}
+
+pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
+                                 uint8_t *buffer, uint16_t *size_copied,
+                                 uint8_t *n_last_bits) {
+
+}
+
+void mfrc522AcquireBus(void *inst) {
+
+}
+
+void mfrc522ReleaseBus(void *inst) {
+
+}
+
+bool mfrc522SupportsExtFeature(void *inst, pcdfeature_t feature) {
+
+}
+
+pcdresult_t mfrc522CallExtFeature(void *inst, pcdfeature_t feature,
+                                  void *params, void *result) {
+
+}
+
+const struct BasePcdVMT mfrc522VMT = {
+    &mfrc522GetStateAB,
+    &mfrc522ActivateRFAB,
+    &mfrc522DeactivateRFAB,
+    &mfrc522GetSupportedParamsAB,
+    &mfrc522SetParamsAB,
+    &mfrc522TransceiveShortFrameA,
+    &mfrc522TransceiveStandardFrameA,
+    &mfrc522TransceiveAnticollFrameA,
+    &mfrc522GetResponseLengthA,
+    &mfrc522GetResponseAB,
+    &mfrc522AcquireBus,
+    &mfrc522ReleaseBus,
+    &mfrc522SupportsExtFeature,
+    &mfrc522CallExtFeature
+};
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -415,7 +537,9 @@ void mfrc522Init(void) {
 void mfrc522ObjectInitSPI(Mfrc522Driver *mdp, SPIDriver *spip) {
     mdp->connection_type = MFRC522_CONN_SPI;
     mdp->iface.spip = spip;
-    mdp->state = MFRC522_STOP;
+    mdp->state = PCD_STOP;
+    mdp->pcd.vmt = &mfrc522VMT;
+    mdp->pcd.data = mdp;
 }
 #endif
 
@@ -433,7 +557,7 @@ void mfrc522ObjectInitSerial(Mfrc522Driver *mdp, SerialDriver *sdp) {
 
 void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     osalDbgCheck(mdp != NULL);
-    osalDbgAssert(mdp->state == MFRC522_STOP, "Incorrect state!");
+    osalDbgAssert(mdp->state == PCD_STOP, "Incorrect state!");
     osalDbgCheck(config != NULL);
 
     // Enable the MFRC522
@@ -449,14 +573,15 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
                       &interrupt_config);
     extChannelEnable(config->extp, config->interrupt_channel);
 
-    mdp->state = MFRC522_READY;
+    mdp->state = PCD_RF_OFF;
 
     mfrc522Reconfig(mdp, config);
 }
 
 void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     osalDbgCheck(mdp != NULL);
-    osalDbgAssert(mdp->state == MFRC522_READY, "Incorrect state!");
+    osalDbgAssert(mdp->state == PCD_RF_OFF | mdp->state == PCD_READY,
+                  "Incorrect state!");
     osalDbgCheck(config != NULL);
 
     // TODO maybe nicer code formatting?
@@ -501,10 +626,11 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
 
 void mfrc522Stop(Mfrc522Driver *mdp) {
     osalDbgCheck(mdp != NULL);
-    osalDbgAssert(mdp->state == MFRC522_READY, "Incorrect state!");
+    osalDbgAssert(mdp->state == PCD_READY | mdp->state == PCD_RF_OFF,
+                  "Incorrect state!");
     extChannelDisable(mdp->extp, mdp->interrupt_channel);
     palClearLine(mdp->reset_line);
-    mdp->state = MFRC522_STOP;
+    mdp->state = PCD_STOP;
 }
 
 #endif /* HAL_USE_MFRC522 == TRUE */
