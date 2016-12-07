@@ -100,66 +100,6 @@ typedef enum {
 /*===========================================================================*/
 
 /**
- * @brief Structure representing a MFRC522 driver
- */
-typedef struct {
-	/**
-	 * Abstract Pcd structure to be used with other parts of this stack
-	 */
-	Pcd pcd;
-
-	/**
-	 * Driver state
-	 */
-	mfrc522state_t state;
-
-	/**
-	 * How is the MFRC522 connected. Don't modify this value.
-	 */
-	enum mfrc522_conntype_t {
-#if MFRC522_USE_SPI || defined(__DOXYGEN__)
-		MFRC522_CONN_SPI,
-#endif
-#if MFRC522_USE_I2C || defined(__DOXYGEN__)
-		MFRC522_CONN_I2C,
-#endif
-#if MFRC522_USE_UART || defined(__DOXYGEN__)
-		MFRC522_CONN_SERIAL,
-#endif
-	} connection_type;
-
-	/**
-	 * @brief Pointer to a given interface driver. Don't modify this value.
-	 */
-	union iface_u {
-#if MFRC522_USE_SPI || defined(__DOXYGEN__)
-		SPIDriver *spip;
-#endif
-#if MFRC522_USE_I2C || defined(__DOXYGEN__)
-		I2CDriver *i2cp;
-#endif
-#if MFRC522_USE_UART || defined(__DOXYGEN__)
-		SerialDriver *sdp;
-#endif
-	} iface;
-
-	/**
-	 * EXT driver to use for handling MFRC522-issued interrupts
-	 */
-	EXTDriver *extp;
-
-	/**
-	 * EXT channel to which the IRQ pin is connected
-	 */
-	expchannel_t interrupt_channel;
-
-	/**
-	 * PAL line, which when set low resets the connected MFRC522
-	 */
-	void *reset_line;
-} Mfrc522Driver;
-
-/**
  * @brief Config options for the MFRC522 module
  *
  * **Fill with default values before modification using mfrc522DefaultConfig!**
@@ -369,6 +309,72 @@ typedef struct {
 	 */
 	uint8_t modulation_index_p;
 } Mfrc522Config;
+
+/**
+ * @brief Structure representing a MFRC522 driver
+ */
+typedef struct {
+	/**
+	 * Abstract Pcd structure to be used with other parts of this stack
+	 */
+	Pcd pcd;
+
+	/**
+	 * Driver state
+	 */
+	mfrc522state_t state;
+
+	/**
+	 * How is the MFRC522 connected. Don't modify this value.
+	 */
+	enum mfrc522_conntype_t {
+#if MFRC522_USE_SPI || defined(__DOXYGEN__)
+		MFRC522_CONN_SPI,
+#endif
+#if MFRC522_USE_I2C || defined(__DOXYGEN__)
+		MFRC522_CONN_I2C,
+#endif
+#if MFRC522_USE_UART || defined(__DOXYGEN__)
+		MFRC522_CONN_SERIAL,
+#endif
+	} connection_type;
+
+	/**
+	 * @brief Pointer to a given interface driver. Don't modify this value.
+	 */
+	union iface_u {
+#if MFRC522_USE_SPI || defined(__DOXYGEN__)
+		SPIDriver *spip;
+#endif
+#if MFRC522_USE_I2C || defined(__DOXYGEN__)
+		I2CDriver *i2cp;
+#endif
+#if MFRC522_USE_UART || defined(__DOXYGEN__)
+		SerialDriver *sdp;
+#endif
+	} iface;
+
+	/**
+	 * EXT driver to use for handling MFRC522-issued interrupts
+	 */
+	EXTDriver *extp;
+
+	/**
+	 * EXT channel to which the IRQ pin is connected
+	 */
+	expchannel_t interrupt_channel;
+
+	/**
+	 * PAL line, which when set low resets the connected MFRC522
+	 */
+	void *reset_line;
+
+	/**
+	 * Lastly applied config
+	 */
+	Mfrc522Config *current_config;
+
+} Mfrc522Driver;
 
 /*===========================================================================*/
 /* Driver macros.                                                            */
