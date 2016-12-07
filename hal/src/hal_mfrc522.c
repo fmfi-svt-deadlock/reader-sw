@@ -12,7 +12,7 @@ typedef enum {
     CommandReg          = 0x01,
     ComIEnReg           = 0x02,
     DivIEnReg           = 0x03,
-    CommIrqReg          = 0x04,
+    ComIrqReg           = 0x04,
     DivIrqReg           = 0x05,
     ErrorReg            = 0x06,
     Status1Reg          = 0x07,
@@ -181,6 +181,32 @@ const EXTChannelConfig interrupt_config = {
 
 #define TxAskReg_Force100ASK            6
 
+#define BitFramingReg_TxLastBits        0
+#define BitFramingReg_RxAlign           4
+#define BitFramingReg_StartSend         7
+
+#define ComIEnReg_IRqInv                7
+#define ComIEnReg_TxIEn                 6
+#define ComIEnReg_RxIEn                 5
+#define ComIEnReg_IdleIEn               4
+#define ComIEnReg_HiAlertEn             3
+#define ComIEnReg_LoAlertEn             2
+#define ComIEnReg_ErrIEn                1
+#define ComIEnReg_TimerIEn              0
+
+#define ComIrqReg_Set1                  7
+#define ComIrqReg_TxIRq                 6
+#define ComIrqReg_RxIRq                 5
+#define ComIrqReg_IdleIRq               4
+#define ComIrqReg_HiAlertRq             3
+#define ComIrqReg_LoAlertRq             2
+#define ComIrqReg_ErrIRq                1
+#define ComIrqReg_TimerIRq              0
+
+#define FIFOLevelReg_FlushBuffer        7
+
+#define DivIEnReg_IRQPushPull           7
+
 // Self-test expected results
 // Version 0.0 (0x90)
 static const uint8_t selftest_result_ver00[] = {
@@ -228,6 +254,10 @@ static const uint8_t selftest_result_fudan[] = {
     0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
     0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62
 };
+
+Mfrc522Driver* active_drivers[MFRC522_MAX_DEVICES];
+
+#define MFRC522_MSG_INTERRUPT   1
 
 /*===========================================================================*/
 /* Driver local functions.                                                   */
@@ -376,7 +406,20 @@ static void read_register_burst(Mfrc522Driver *mdp, Mfrc522Register reg,
 }
 
 void ext_callback(EXTDriver *extp, expchannel_t channel) {
-    // TODO implement this callback.
+    // Find module which should be woken up and wake it up.
+    osalSysLockFromISR();
+    uint8_t i;
+    // MAX_DEVICES is usually 1, almost definitely less than 16, this loop
+    // should't take long, therefore we can afford it in a lock zone.
+    for (i = 0; i < MFRC522_MAX_DEVICES; i++) {
+        if (active_drivers[i]->extp == extp &&
+            active_drivers[i]->interrupt_channel == channel) {
+            active_drivers[i]->interrupt_pending = true;
+            osalThreadResumeI(&active_drivers[i]->tr, MFRC522_MSG_INTERRUPT);
+            break;
+        }
+    }
+    osalSysUnlockFromISR();
 }
 
 static void write_register_bitmask(Mfrc522Driver *mdp, Mfrc522Register reg,
@@ -474,6 +517,7 @@ pcdresult_t mfrc522ActivateRFAB(void *inst) {
 
     set_register_bits(mdp, TxControlReg,
                       (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+    mdp->state = PCD_READY;
     return PCD_OK;
 }
 
@@ -484,6 +528,7 @@ pcdresult_t mfrc522DeactivateRFAB(void *inst) {
 
     clear_register_bits(mdp, TxControlReg,
                         (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+    mdp->state = PCD_RF_OFF;
     return PCD_OK;
 }
 
@@ -543,7 +588,8 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
     write_register_bitmask(mdp, RxModeReg, Mask_RxModeReg_RxSpeed,
                            (rx_speed << RxModeReg_RxSpeed));
 
-    if (tx_spd == PCD_RX_SPEED_106 && mode == PCD_ISO14443_A) {
+    if (tx_spd == PCD_TX_SPEED_106 && rx_spd == PCD_RX_SPEED_106
+        && mode == PCD_ISO14443_A) {
         // Standard mandates 100% ASK for 106k speed in mode A
         set_register_bits(mdp, TxASKReg, (1 << TxAskReg_Force100ASK));
     } else {
@@ -555,14 +601,81 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
 
 pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
                                          uint16_t *resp_length,
-                                         uint16_t timeout_us) {
+                                         uint32_t timeout_us) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY);
 
+    mdp->state = PCD_ACTIVE;
+
+    // Flush FIFO
+    write_register(mdp, FIFOLevelReg, (1 << FIFOLevelReg_FlushBuffer));
+
+    // Write data
+    write_register(mdp, FIFODataReg, data);
+
+    // Clear interrupt bits
+    // Select all interrupts, bit Set1 is zero. This will unset all selected
+    // interrupts.
+    write_register(mdp, ComIrqReg, 0xFF & ~(1 << ComIrqReg_Set1));
+    mdp->interrupt_pending = false;
+    // Enable interrupts: Rx complete, Timeout and Error
+    set_register_bits(mdp, ComIEnReg,
+                      (1 << ComIEnReg_RxIEn) |
+                      (1 << ComIEnReg_ErrIEn));
+
+
+    command(mdp, Command_Transceive);
+    // Start Send and transmit 7 bits
+    write_register(mdp, BitFramingReg, (7 << BitFramingReg_TxLastBits) |
+                                       (1 << BitFramingReg_StartSend));
+
+    osalSysLock();
+    msg_t message;
+    if (!mdp->interrupt_pending) {
+        message = osalThreadSuspendTimeoutS(&mdp->tr,
+                                            OSAL_US2ST(timeout_us));
+    }
+    mdp->interrupt_pending = false;
+    osalSysUnlock();
+
+    // Reset bit-oriented adjustments and clear 'Start Send' flag
+    write_register(mdp, BitFramingReg, 0);
+
+    // Clear interrupt bits and disable previously enabled interrupts
+    clear_register_bits(mdp, ComIEnReg,
+                        (1 << ComIEnReg_RxIEn) |
+                        (1 << ComIEnReg_ErrIEn));
+    write_register(mdp, ComIrqReg, 0xFF & ~(1 << ComIrqReg_Set1));
+
+    if (message == MSG_TIMEOUT) {
+        return PCD_OK_TIMEOUT;
+    }
+
+    if (message != MFRC522_MSG_INTERRUPT) {
+        // OK, this should not have happened. Fail-fast.
+        osalSysHalt("Unexpected wakeup message");
+    }
+
+    // Handle possible error
+    if (!(read_register(mdp, ComIrqReg) & (1 << ComIrqReg_RxIRq))) {
+        // This was not a 'receive complete' interrupt
+        // TODO more thorough error handling
+        return PCD_ERROR;
+    }
+
+    mdp->resp_read_bytes = 0;
+    mdp->resp_length = read_register(mdp, FIFOLevelReg);
+    *resp_length = mdp->resp_length;
+    read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
+
+    return PCD_OK;
 }
 
 pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint16_t *resp_length,
-                                            uint16_t timeout_us) {
+                                            uint32_t timeout_us) {
 
 }
 
@@ -570,7 +683,7 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
                                             uint16_t *resp_length,
-                                            uint16_t timeout_us) {
+                                            uint32_t timeout_us) {
 
 }
 
@@ -653,31 +766,63 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     osalDbgAssert(mdp->state == PCD_STOP, "Incorrect state!");
     osalDbgCheck(config != NULL);
 
+    // TODO thread safety?
+    uint8_t i = 0;
+    while(true) {
+        if (i == MFRC522_MAX_DEVICES) {
+            osalSysHalt("Maximum number of active MFRC522 modules exceeded!");
+        }
+        if (active_drivers[i] == NULL) {
+            active_drivers[i] = mdp;
+            break;
+        }
+        i++;
+    }
+
     // Enable the MFRC522
     mdp->reset_line = config->reset_line;
     palSetLine(config->reset_line);
     osalThreadSleepMicroseconds(40);  // Oscillator start-up time
 
+    // Interrupt pin setup
+    // Disable propagation of all communication interrupts
+    write_register(mdp, ComIEnReg, 0);
+    // Set IRQ pin to push-pull and disable propagation of the rest of the
+    // interrupts
+    write_register(mdp, DivIEnReg, (1 << DivIEnReg_IRQPushPull));
+
     // Interrupt handler setup
     osalDbgCheck(config->extp != NULL);
     mdp->extp = config->extp;
     mdp->interrupt_channel = config->interrupt_channel;
+
+    // TODO don't forget to document that each reader must be connected to a
+    // **UNIQUE** interrupt channel and **ONLY** the reader may be connected to
+    // that interrupt channel.
     extSetChannelMode(config->extp, config->interrupt_channel,
                       &interrupt_config);
     extChannelEnable(config->extp, config->interrupt_channel);
+    mdp->extp = config->extp;
+    mdp->interrupt_channel = config->interrupt_channel;
 
     mdp->state = PCD_RF_OFF;
 
+    // Apply the provided configuration
     mfrc522Reconfig(mdp, config);
+    // Apply the default transmission params
+    mfrc522SetParamsAB(mdp, PCD_RX_SPEED_106, PCD_TX_SPEED_106,
+                       PCD_ISO14443_A);
 }
 
 void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     osalDbgCheck(mdp != NULL);
-    osalDbgAssert(mdp->state == PCD_RF_OFF | mdp->state == PCD_READY,
+    osalDbgAssert(mdp->state == PCD_RF_OFF || mdp->state == PCD_READY,
                   "Incorrect state!");
     osalDbgCheck(config != NULL);
 
     // TODO maybe nicer code formatting?
+    // TODO state explicitly that interrupt-related settings will **NOT** be
+    // changed.
 
     write_register_bitmask(mdp, ModeReg, (ModeReg_PolMFin | Mask_ModeReg_CRCPreset),
                            (config->MFIN_polarity ? 1 : 0 << ModeReg_PolMFin) |
@@ -719,11 +864,24 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
 
 void mfrc522Stop(Mfrc522Driver *mdp) {
     osalDbgCheck(mdp != NULL);
-    osalDbgAssert(mdp->state == PCD_READY | mdp->state == PCD_RF_OFF,
+    osalDbgAssert(mdp->state == PCD_READY || mdp->state == PCD_RF_OFF,
                   "Incorrect state!");
     extChannelDisable(mdp->extp, mdp->interrupt_channel);
     palClearLine(mdp->reset_line);
     mdp->state = PCD_STOP;
+
+    // TODO thread safety?
+    uint8_t i = 0;
+    while(true) {
+        if (i == MFRC522_MAX_DEVICES) {
+            osalSysHalt("Internal driver data corrupted!");
+        }
+        if (active_drivers[i] == mdp) {
+            active_drivers[i] = NULL;
+            break;
+        }
+        i++;
+    }
 }
 
 #endif /* HAL_USE_MFRC522 == TRUE */

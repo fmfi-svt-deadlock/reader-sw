@@ -13,6 +13,10 @@ static THD_FUNCTION(init_thread, p) {
     // require the OS to run and spawns other threads
 
     devicesInit();
+
+    uint16_t resp_len;
+    pcdActivateRFAB(PCD);
+    pcdTransceiveShortFrameA(PCD, 0x26, &resp_len, 100000);
 }
 
 int main(void) {

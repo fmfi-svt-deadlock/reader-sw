@@ -53,6 +53,16 @@
 #define MFRC522_USE_UART            FALSE
 #endif
 
+/**
+ * @brief   Maximum number of simultaneously active devices this driver should
+ *          handle.
+ * @note    Lowering this value saves data space and increases driver
+ *          performance.
+ */
+#if !defined(MFRC522_MAX_DEVICES) || defined(__DOXYGEN__)
+#define MFRC522_MAX_DEVICES			5
+#endif
+
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
@@ -301,7 +311,9 @@ typedef struct {
 } Mfrc522Config;
 
 /**
- * @brief Structure representing a MFRC522 driver
+ * @brief Structure representing a MFRC522 driver.
+ *
+ * Don't modify any of these values.
  */
 typedef struct {
 	/**
@@ -315,7 +327,7 @@ typedef struct {
 	pcdstate_t state;
 
 	/**
-	 * How is the MFRC522 connected. Don't modify this value.
+	 * How is the MFRC522 connected.
 	 */
 	enum mfrc522_conntype_t {
 #if MFRC522_USE_SPI || defined(__DOXYGEN__)
@@ -330,7 +342,7 @@ typedef struct {
 	} connection_type;
 
 	/**
-	 * @brief Pointer to a given interface driver. Don't modify this value.
+	 * @brief Pointer to a given interface driver.
 	 */
 	union iface_u {
 #if MFRC522_USE_SPI || defined(__DOXYGEN__)
@@ -362,7 +374,32 @@ typedef struct {
 	/**
 	 * Lastly applied config
 	 */
-	Mfrc522Config *current_config;
+	const Mfrc522Config *current_config;
+
+	/**
+	 * Interrupt is pending for this reader
+	 */
+	bool interrupt_pending;
+
+	/**
+	 * Thread reference the reader will sleep on
+	 */
+	thread_reference_t tr;
+
+	/**
+	 * Response buffer
+	 */
+	uint8_t response[64];
+
+	/**
+	 * Response length
+	 */
+	uint8_t resp_length;
+
+	/**
+	 * Number of already retreived response bytes
+	 */
+	uint8_t resp_read_bytes;
 
 } Mfrc522Driver;
 

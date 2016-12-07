@@ -313,7 +313,7 @@ struct BasePcdVMT {
      */
     pcdresult_t (*transceiveShortFrameA)(void *inst, uint8_t data,
                                          uint16_t *resp_length,
-                                         uint16_t timeout_us);
+                                         uint32_t timeout_us);
 
 
     /**
@@ -360,7 +360,7 @@ struct BasePcdVMT {
     pcdresult_t (*transceiveStandardFrameA)(void *inst, uint8_t* buffer,
                                             uint16_t length,
                                             uint16_t *resp_length,
-                                            uint16_t timeout_us);
+                                            uint32_t timeout_us);
 
     /**
      * @brief      Transmits the first part of an 'Anticollision Frame' and blocks
@@ -408,7 +408,7 @@ struct BasePcdVMT {
                                             uint16_t length,
                                             uint8_t n_last_bits,
                                             uint16_t *resp_length,
-                                            uint16_t timeout_us);
+                                            uint32_t timeout_us);
 
     /**
      * @brief      Gets (remaining) size of response stored in the buffer, if
