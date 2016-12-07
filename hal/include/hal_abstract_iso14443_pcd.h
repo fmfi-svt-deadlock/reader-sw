@@ -157,8 +157,8 @@ typedef enum {
  * @brief  Standard communication modes
  */
 typedef enum {
-    PCD_ISO14443_A    = 0,
-    PCD_ISO14443_B    = 1
+    PCD_ISO14443_A    = 1,
+    PCD_ISO14443_B    = 2
 } pcdmode_t;
 
 /**

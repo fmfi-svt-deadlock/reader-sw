@@ -87,6 +87,22 @@ typedef enum {
     Command_SoftReset   = 0xF
 } Mfrc522Command;
 
+const PcdSParams supported_params = {
+    // Supported tx / rx speeds in mode A
+    (PCD_TX_SPEED_106 | PCD_TX_SPEED_212 | PCD_TX_SPEED_424 | PCD_TX_SPEED_848 |
+    PCD_RX_SPEED_106 | PCD_RX_SPEED_212 | PCD_RX_SPEED_424 | PCD_RX_SPEED_848),
+    // Supported tx / rx speeds in mode B
+    0,
+    // Support for assymetric speed setting
+    true,
+    // Supported operation modes (A or B)
+    PCD_ISO14443_A,
+    // Max tx frame size
+    64,
+    // Max rx frame size
+    64
+};
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -118,6 +134,19 @@ const EXTChannelConfig interrupt_config = {
 #define Mask_ModeReg_CRCPreset          (0x3 << ModeReg_CRCPreset)
 
 #define TxModeReg_InvMod                3
+#define TxModeReg_TxSpeed               4
+#define TxModeReg_TxSpeed_106           0b000
+#define TxModeReg_TxSpeed_212           0b001
+#define TxModeReg_TxSpeed_424           0b010
+#define TxModeReg_TxSpeed_848           0b011
+#define Mask_TxModeReg_TxSpeed          (0x7 << TxModeReg_TxSpeed)
+
+#define RxModeReg_RxSpeed               4
+#define RxModeReg_RxSpeed_106           0b000
+#define RxModeReg_RxSpeed_212           0b001
+#define RxModeReg_RxSpeed_424           0b010
+#define RxModeReg_RxSpeed_848           0b011
+#define Mask_RxModeReg_RxSpeed          (0x7 << RxModeReg_RxSpeed)
 
 #define TxSelReg_DriverSel              4
 #define Mask_TxSelReg_DriverSel         (0x3 << TxSelReg_DriverSel)
@@ -149,6 +178,8 @@ const EXTChannelConfig interrupt_config = {
 
 #define TxControlReg_Tx1RFEn            0
 #define TxControlReg_Tx2RFEn            1
+
+#define TxAskReg_Force100ASK            6
 
 // Self-test expected results
 // Version 0.0 (0x90)
@@ -443,6 +474,7 @@ pcdresult_t mfrc522ActivateRFAB(void *inst) {
 
     set_register_bits(mdp, TxControlReg,
                       (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+    return PCD_OK;
 }
 
 pcdresult_t mfrc522DeactivateRFAB(void *inst) {
@@ -452,15 +484,73 @@ pcdresult_t mfrc522DeactivateRFAB(void *inst) {
 
     clear_register_bits(mdp, TxControlReg,
                         (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+    return PCD_OK;
 }
 
 PcdSParams* mfrc522GetSupportedParamsAB(void *inst) {
-
+    return &supported_params;
 }
 
 pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
                                pcdspeed_tx_t tx_spd, pcdmode_t mode) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
+    uint8_t rx_speed;
+    uint8_t tx_speed;
+
+    if (mode != PCD_ISO14443_A) {
+        return PCD_UNSUPPORTED;
+    }
+
+    switch(rx_spd) {
+        case PCD_RX_SPEED_106:
+            rx_speed = RxModeReg_RxSpeed_106;
+            break;
+        case PCD_RX_SPEED_212:
+            rx_speed = RxModeReg_RxSpeed_212;
+            break;
+        case PCD_RX_SPEED_424:
+            rx_speed = RxModeReg_RxSpeed_424;
+            break;
+        case PCD_RX_SPEED_848:
+            rx_speed = RxModeReg_RxSpeed_848;
+            break;
+        default:
+            return PCD_UNSUPPORTED;
+    }
+
+    switch(tx_spd) {
+        case PCD_TX_SPEED_106:
+            tx_speed = TxModeReg_TxSpeed_106;
+            break;
+        case PCD_TX_SPEED_212:
+            tx_speed = TxModeReg_TxSpeed_212;
+            break;
+        case PCD_TX_SPEED_424:
+            tx_speed = TxModeReg_TxSpeed_424;
+            break;
+        case PCD_TX_SPEED_848:
+            tx_speed = TxModeReg_TxSpeed_848;
+            break;
+        default:
+            return PCD_UNSUPPORTED;
+    }
+
+    write_register_bitmask(mdp, TxModeReg, Mask_TxModeReg_TxSpeed,
+                           (tx_speed << TxModeReg_TxSpeed));
+    write_register_bitmask(mdp, RxModeReg, Mask_RxModeReg_RxSpeed,
+                           (rx_speed << RxModeReg_RxSpeed));
+
+    if (tx_spd == PCD_RX_SPEED_106 && mode == PCD_ISO14443_A) {
+        // Standard mandates 100% ASK for 106k speed in mode A
+        set_register_bits(mdp, TxASKReg, (1 << TxAskReg_Force100ASK));
+    } else {
+        clear_register_bits(mdp, TxASKReg, (1 << TxAskReg_Force100ASK));
+    }
+
+    return PCD_OK;
 }
 
 pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
