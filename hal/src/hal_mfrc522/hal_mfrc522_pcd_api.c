@@ -79,9 +79,11 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
     }
 
     // Handle possible error
-    if (!(mfrc522_read_register(mdp, ComIrqReg) & (1 << ComIrqReg_RxIRq))) {
+    if (mfrc522_read_register(mdp, ErrorReg)) {
         // This was not a 'receive complete' interrupt
         // TODO more thorough error handling
+        // TODO we can get here legitimately if collision occured!
+        uint8_t error = mfrc522_read_register(mdp, ErrorReg);
         return PCD_ERROR;
     }
 
@@ -232,9 +234,7 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
 
     // Write data, set Start Send
     mfrc522_write_register_burst(mdp, FIFODataReg, buffer, length);
-    mfrc522_write_register(mdp, BitFramingReg,
-                           (7 << BitFramingReg_TxLastBits) |
-                           (1 << BitFramingReg_StartSend));
+    mfrc522_write_register(mdp, BitFramingReg, (1 << BitFramingReg_StartSend));
 
     msg_t message = wait_for_response(mdp, timeout_us);
 
@@ -275,7 +275,7 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
 uint16_t mfrc522GetResponseLengthA(void *inst) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
+    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
     return mdp->resp_length - mdp->resp_read_bytes;
 }
@@ -286,11 +286,11 @@ pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
                                  uint8_t *n_last_bits) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
+    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
     uint8_t remaining_bytes = mdp->resp_length - mdp->resp_read_bytes;
     *size_copied = (buffer_size < remaining_bytes) ? buffer_size : remaining_bytes;
-    memcpy(mdp->response + mdp->resp_read_bytes, buffer, *size_copied);
+    memcpy(buffer, mdp->response + mdp->resp_read_bytes, *size_copied);
     mdp->resp_read_bytes += *size_copied;
     if (mdp->resp_read_bytes == mdp->resp_length) {
         *n_last_bits = mdp->resp_last_valid_bits;

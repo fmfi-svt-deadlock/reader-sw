@@ -544,8 +544,8 @@ typedef struct {
  * @see BasePcdVMT.transceiveStandardFrameA
  */
 #define pcdTransceiveStandardFrameA(ip, data, size, resp_len_p, timeout_us)   \
-        ((ip)->vmt->transceiveStandardFrame(ip, data, size, resp_len_p,       \
-                                            timeout_us))
+        ((ip)->vmt->transceiveStandardFrameA(ip, data, size, resp_len_p,       \
+                                             timeout_us))
 
 /**
  * @see BasePcdVMT.transceiveAnticollFrameA
