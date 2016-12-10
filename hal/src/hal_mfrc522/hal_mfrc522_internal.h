@@ -179,6 +179,22 @@ typedef enum {
 
 #define DivIEnReg_IRQPushPull           7
 
+#define ErrorReg_WrErr                  7
+#define ErrorReg_TempErr                6
+#define ErrorReg_BufferOvfl             4
+#define ErrorReg_CollErr                3
+#define ErrorReg_CRCErr                 2
+#define ErrorReg_ParityErr              1
+#define ErrorReg_ProtocolErr            0
+
+#define ControlReg_RxLastBits           0
+#define Mask_ControlReg_RxLastBits      0x7
+
+#define CollReg_CollPos                 0
+#define Mask_CollReg_CollPos            0x1F
+#define CollReg_CollPosNotValid         5
+#define CollReg_ValuesAfterColl         7
+
 // --- Thread wakeup messages ---
 #define MFRC522_MSG_INTERRUPT           1
 

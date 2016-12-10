@@ -48,6 +48,8 @@ static msg_t wait_for_response(Mfrc522Driver *mdp, uint32_t timeout_us) {
     if (!mdp->interrupt_pending) {
         message = osalThreadSuspendTimeoutS(&mdp->tr,
                                             OSAL_US2ST(timeout_us));
+    } else {
+        message = MFRC522_MSG_INTERRUPT;
     }
     mdp->interrupt_pending = false;
     osalSysUnlock();
@@ -78,24 +80,52 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         osalSysHalt("Unexpected wakeup message");
     }
 
+    bool collision_happened = false;
+
     // Handle possible error
     if (mfrc522_read_register(mdp, ErrorReg)) {
         // This was not a 'receive complete' interrupt
-        // TODO more thorough error handling
-        // TODO we can get here legitimately if collision occured!
         uint8_t error = mfrc522_read_register(mdp, ErrorReg);
-        return PCD_ERROR;
+
+        if (error & (1 << ErrorReg_BufferOvfl)) {
+            return PCD_RX_OVERFLOW;
+        } else if ((error & (1 << ErrorReg_CollErr)) && collisions_possible) {
+            collision_happened = true;
+        } else {
+            return PCD_ERROR;
+        }
     }
 
-    // TODO if collisions are possible handle them!
-
     mdp->resp_read_bytes = 0;
-    mdp->resp_last_valid_bits = 0;
-    mdp->resp_length = mfrc522_read_register(mdp, FIFOLevelReg);
-    *resp_length = mdp->resp_length;
+    if (collision_happened) {
+        uint8_t coll_reg = mfrc522_read_register(mdp, CollReg);
+        if (coll_reg & (1 << CollReg_CollPosNotValid)) {
+            // Collision occured, but somewhere after the 4th byte.
+            // See documentation of this driver, section 'Anticollision frame'
+            // for explanation when this could happen and why we return
+            // PCD_ERROR status
+            return PCD_ERROR;
+        }
+        // Indicates collision position.
+        //   - 1: Collision in the first received bit (position: byte 0, bit 0, 0 valid bits received)
+        //   - 8: Collision in the eight received bit (position: byte 0, bit 7, 7 valid bits received)
+        //   - 0: Collision in the 32nd received bit (position: byte 3, bit 7, 31 valid bits receoved)
+        uint8_t coll_pos = ((coll_reg & Mask_CollReg_CollPos) >> CollReg_CollPos);
+        // Get number of valid bits from coll_pos. Decrement by 1 and let it underflow if it was
+        // 0, then trim it to the proper size.
+        uint8_t nvb = (coll_pos - 1) & 31;
+        // Number of valid bytes + 1 containing a collided bit
+        mdp->resp_length = (nvb / 8) + 1;
+        *resp_length = mdp->resp_length;
+        mdp->resp_last_valid_bits = nvb % 8;
+    } else {
+        mdp->resp_last_valid_bits = 0;
+        mdp->resp_length = mfrc522_read_register(mdp, FIFOLevelReg);
+        *resp_length = mdp->resp_length;
+    }
     mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
 
-    return PCD_OK;
+    return collision_happened ? PCD_OK_COLLISION : PCD_OK;
 }
 
 // ----------- API FUNCTIONS -------------
@@ -220,7 +250,6 @@ pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
     return handle_response(mdp, message, resp_length, false);
 }
 
-// TODO untested!
 pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint16_t *resp_length,
@@ -243,8 +272,6 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
     return handle_response(mdp, message, resp_length, false);
 }
 
-// TODO untested!
-// Definitely won't work -- does not handle collisions!
 pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
