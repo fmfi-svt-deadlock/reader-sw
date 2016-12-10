@@ -128,6 +128,7 @@ pcdresult_t mfrc522DeactivateRFAB(void *inst) {
 }
 
 const PcdSParams* mfrc522GetSupportedParamsAB(void *inst) {
+    (void)inst;
     return &supported_params;
 }
 
@@ -307,12 +308,37 @@ void mfrc522ReleaseBus(void *inst) {
 }
 
 bool mfrc522SupportsExtFeature(void *inst, pcdfeature_t feature) {
+    (void)inst;
 
+    return (feature == PCD_EXT_SELFTEST) |
+           (feature == PCD_EXT_CALCULATE_CRC_A) |
+           (feature == PCD_EXT_MIFARE_AUTH);
 }
 
 pcdresult_t mfrc522CallExtFeature(void *inst, pcdfeature_t feature,
                                   void *params, void *result) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
 
+    (void)params;
+
+    switch(feature) {
+        case PCD_EXT_SELFTEST:
+            ;
+            struct PcdExtSelftest_result *res;
+            res = (struct PcdExtSelftest_result*) result;
+            res->passed = mfrc522PerformSelftest(mdp);
+            return PCD_OK;
+        case PCD_EXT_CALCULATE_CRC_A:
+            osalSysHalt("Not implemented!");
+            return PCD_OK;
+        case PCD_EXT_MIFARE_AUTH:
+            osalSysHalt("Not implemented!");
+            return PCD_OK;
+        default:
+            return PCD_UNSUPPORTED;
+    }
 }
 
 const struct BasePcdVMT mfrc522VMT = {

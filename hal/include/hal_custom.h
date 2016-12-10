@@ -23,6 +23,7 @@
 /* Abstract interfaces.*/
 #include "hal_abstract_CRCard.h"
 #include "hal_abstract_iso14443_pcd.h"
+#include "hal_abstract_iso14443_pcd_ext.h"
 
 /* Shared headers.*/
 
