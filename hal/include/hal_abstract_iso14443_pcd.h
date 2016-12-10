@@ -248,7 +248,7 @@ struct BasePcdVMT {
      * @return     Pointer to a PcdSParams structure. Content of this structure
      *             should not be modified.
      */
-    PcdSParams *(*getSupportedParamsAB)(void *inst);
+    const PcdSParams *(*getSupportedParamsAB)(void *inst);
 
     /**
      * @brief      Sets communication parameters.

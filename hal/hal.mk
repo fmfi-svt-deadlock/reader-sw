@@ -9,7 +9,10 @@ HALCONF := $(strip $(shell cat halconf.h | egrep -e "define"))
 HALSRC += $(CUSTOM_HAL)/src/hal_custom.c
 
 ifneq ($(findstring HAL_USE_MFRC522 TRUE,$(HALCONF)),)
-HALSRC += $(CUSTOM_HAL)/src/hal_mfrc522.c
+HALSRC += $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522.c             \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_ext_api.c     \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_llcom.c       \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_pcd_api.c
 endif
 
 ifneq ($(findstring HAL_USE_ISO14443_PICC TRUE,$(HALCONF)),)
@@ -17,8 +20,11 @@ HALSRC += $(CUSTOM_HAL)/src/hal_iso14443_picc.c
 endif
 
 else
-HALSRC += $(CUSTOM_HAL)/src/hal_custom.c              \
-          $(CUSTOM_HAL)/src/hal_mfrc522.c             \
+HALSRC += $(CUSTOM_HAL)/src/hal_custom.c                          \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522.c             \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_ext_api.c     \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_llcom.c       \
+          $(CUSTOM_HAL)/src/hal_mfrc522/hal_mfrc522_pcd_api.c     \
           $(CUSTOM_HAL)/src/hal_iso14443_picc.c
 endif
 
