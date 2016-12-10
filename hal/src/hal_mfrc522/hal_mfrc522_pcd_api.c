@@ -6,6 +6,7 @@
  *          for the MFRC522.
  */
 
+#include <string.h>
 #include "hal_mfrc522_internal.h"
 
 // ----------- COMMON MACROS -------------
@@ -50,6 +51,7 @@ static msg_t wait_for_response(Mfrc522Driver *mdp, uint32_t timeout_us) {
     }
     mdp->interrupt_pending = false;
     osalSysUnlock();
+    return message;
 }
 
 static void cleanup_transceive(Mfrc522Driver *mdp) {
@@ -86,6 +88,7 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
     // TODO if collisions are possible handle them!
 
     mdp->resp_read_bytes = 0;
+    mdp->resp_last_valid_bits = 0;
     mdp->resp_length = mfrc522_read_register(mdp, FIFOLevelReg);
     *resp_length = mdp->resp_length;
     mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
@@ -240,6 +243,7 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
 }
 
 // TODO untested!
+// Definitely won't work -- does not handle collisions!
 pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
@@ -266,14 +270,32 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
     return handle_response(mdp, message, resp_length, true);
 }
 
+// TODO untested!
 uint16_t mfrc522GetResponseLengthA(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
 
+    return mdp->resp_length - mdp->resp_read_bytes;
 }
 
+// TODO untested!
 pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
                                  uint8_t *buffer, uint16_t *size_copied,
                                  uint8_t *n_last_bits) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
+    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
 
+    uint8_t remaining_bytes = mdp->resp_length - mdp->resp_read_bytes;
+    *size_copied = (buffer_size < remaining_bytes) ? buffer_size : remaining_bytes;
+    memcpy(mdp->response + mdp->resp_read_bytes, buffer, *size_copied);
+    mdp->resp_read_bytes += *size_copied;
+    if (mdp->resp_read_bytes == mdp->resp_length) {
+        *n_last_bits = mdp->resp_last_valid_bits;
+    }
+
+    return PCD_OK;
 }
 
 void mfrc522AcquireBus(void *inst) {

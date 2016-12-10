@@ -392,6 +392,11 @@ typedef struct {
 	uint8_t response[64];
 
 	/**
+	 * Number of last valid bits in the response
+	 */
+	uint8_t resp_last_valid_bits;
+
+	/**
 	 * Response length
 	 */
 	uint8_t resp_length;
