@@ -269,6 +269,11 @@ debug: build/deadlock-reader.elf
 	arm-none-eabi-gdb build/deadlock-reader.elf -ex "target extended :4242"
 	pkill st-util
 
+debugl: build/deadlock-reader.elf
+	pgrep st-util || st-util &
+	arm-none-eabi-gdb build/deadlock-reader.elf -ex "target extended :4242" -ex "load" -ex "break chSysHalt" -ex "step"
+	pkill st-util
+
 #
 #
 ##############################################################################
