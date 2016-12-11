@@ -386,9 +386,11 @@ struct BasePcdVMT {
      * @param      len          Size of the buffer
      * @param      n_last_bits  Number of valid bits in the last byte to be
      *                          transmitted. 0 means the whole byte is valid.
+     * @param      align_rx     Desired position of the first received bit in
+     *                          the first byte of the response.
      * @param      resp_len_p   Size of the received response
-     * @param      timeout_us  Max number of microseconds to wait for a
-     *                         response.
+     * @param      timeout_us   Max number of microseconds to wait for a
+     *                          response.
      *
      * @retval     PCD_OK Transmission successful and response received.
      * @retval     PCD_OK_COLLISION Transmission successful and multiple
@@ -407,6 +409,7 @@ struct BasePcdVMT {
     pcdresult_t (*transceiveAnticollFrameA)(void *inst, uint8_t* buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
+                                            uint8_t align_rx,
                                             uint16_t *resp_length,
                                             uint32_t timeout_us);
 
@@ -550,10 +553,10 @@ typedef struct {
 /**
  * @see BasePcdVMT.transceiveAnticollFrameA
  */
-#define pcdTransceiveAnticollFrameA(ip, data, size, n_last_bits, resp_len_p,  \
-                                    timeout_us)                               \
+#define pcdTransceiveAnticollFrameA(ip, data, size, n_last_bits, align_rx,    \
+                                    resp_len_p, timeout_us)                   \
         ((ip)->vmt->transceiveAnticollFrameA(ip, data, size, n_last_bits,     \
-                                             resp_len_p, timeout_us))
+                                             align_rx, resp_len_p, timeout_us))
 /**
  * @see BasePcdVMT.getResponseLengthA
  */

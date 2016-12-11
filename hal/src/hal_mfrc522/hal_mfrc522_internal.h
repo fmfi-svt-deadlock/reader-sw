@@ -197,6 +197,7 @@ typedef enum {
 
 // --- Thread wakeup messages ---
 #define MFRC522_MSG_INTERRUPT           1
+#define MFRC522_MSG_PEND_INTERRUPT      2
 
 extern const PcdSParams supported_params;
 

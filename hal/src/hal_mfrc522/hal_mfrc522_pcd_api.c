@@ -33,11 +33,20 @@ static void prepare_transceive(Mfrc522Driver *mdp) {
     // interrupts.
     mfrc522_write_register(mdp, ComIrqReg, 0xFF & ~(1 << ComIrqReg_Set1));
     mdp->interrupt_pending = false;
+    // Before enabling interrupts check them. They should definitelly be
+    // cleared at this point.
+    uint8_t t = mfrc522_read_register(mdp, ComIrqReg);
+    uint8_t irqs = mfrc522_read_register(mdp, ComIrqReg) &
+                   ((1 << ComIEnReg_RxIEn) | (1 << ComIEnReg_ErrIEn));
+    if (irqs) {
+        // This could mean that this driver is buggy or that the MFRC522 module
+        // is overheating. Better panic either way.
+        osalSysHalt("mfrc522: unexpected irq bit!");
+    }
     // Enable interrupts: Rx complete, Timeout and Error
     mfrc522_set_register_bits(mdp, ComIEnReg,
                       (1 << ComIEnReg_RxIEn) |
                       (1 << ComIEnReg_ErrIEn));
-
 
     mfrc522_command(mdp, Command_Transceive);
 }
@@ -49,7 +58,7 @@ static msg_t wait_for_response(Mfrc522Driver *mdp, uint32_t timeout_us) {
         message = osalThreadSuspendTimeoutS(&mdp->tr,
                                             OSAL_US2ST(timeout_us));
     } else {
-        message = MFRC522_MSG_INTERRUPT;
+        message = MFRC522_MSG_PEND_INTERRUPT;
     }
     mdp->interrupt_pending = false;
     osalSysUnlock();
@@ -64,7 +73,10 @@ static void cleanup_transceive(Mfrc522Driver *mdp) {
     mfrc522_clear_register_bits(mdp, ComIEnReg,
                         (1 << ComIEnReg_RxIEn) |
                         (1 << ComIEnReg_ErrIEn));
+    // Set command to Idle, this will also clear error bits
+    mfrc522_command(mdp, Command_Idle);
     mfrc522_write_register(mdp, ComIrqReg, 0xFF & ~(1 << ComIrqReg_Set1));
+    mdp->interrupt_pending = false;
 }
 
 static pcdresult_t handle_response(Mfrc522Driver *mdp,
@@ -75,7 +87,7 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         return PCD_OK_TIMEOUT;
     }
 
-    if (message != MFRC522_MSG_INTERRUPT) {
+    if (message != MFRC522_MSG_INTERRUPT && message != MFRC522_MSG_PEND_INTERRUPT) {
         // OK, this should not have happened. Fail-fast.
         osalSysHalt("Unexpected wakeup message");
     }
@@ -123,7 +135,9 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         mdp->resp_length = mfrc522_read_register(mdp, FIFOLevelReg);
         *resp_length = mdp->resp_length;
     }
-    mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
+    if (mdp->resp_length != 0) {
+        mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
+    }
 
     return collision_happened ? PCD_OK_COLLISION : PCD_OK;
 }
@@ -245,9 +259,10 @@ pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
 
     msg_t message = wait_for_response(mdp, timeout_us);
 
+    pcdresult_t status = handle_response(mdp, message, resp_length, true);
     cleanup_transceive(mdp);
     mdp->state = PCD_READY;
-    return handle_response(mdp, message, resp_length, false);
+    return status;
 }
 
 pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
@@ -267,19 +282,23 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
 
     msg_t message = wait_for_response(mdp, timeout_us);
 
+    pcdresult_t status = handle_response(mdp, message, resp_length, false);
     cleanup_transceive(mdp);
     mdp->state = PCD_READY;
-    return handle_response(mdp, message, resp_length, false);
+    return status;
 }
 
 pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint16_t length,
                                             uint8_t n_last_bits,
+                                            uint8_t align_rx,
                                             uint16_t *resp_length,
                                             uint32_t timeout_us) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
     CHECK_STATE(mdp->state != PCD_READY);
+
+    // TODO anticoll is possible only in 106kBd mode, check and enforce!
 
     mdp->state = PCD_ACTIVE;
     prepare_transceive(mdp);
@@ -289,13 +308,15 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
     mfrc522_write_register_burst(mdp, FIFODataReg, buffer, length);
     mfrc522_write_register(mdp, BitFramingReg,
                            ((n_last_bits & 0x7) << BitFramingReg_TxLastBits) |
+                           ((align_rx & 0x7) << BitFramingReg_RxAlign) |
                            (1 << BitFramingReg_StartSend));
 
     msg_t message = wait_for_response(mdp, timeout_us);
 
+    pcdresult_t status = handle_response(mdp, message, resp_length, true);
     cleanup_transceive(mdp);
     mdp->state = PCD_READY;
-    return handle_response(mdp, message, resp_length, true);
+    return status;
 }
 
 // TODO untested!

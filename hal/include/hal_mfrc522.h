@@ -379,7 +379,7 @@ typedef struct {
 	/**
 	 * Interrupt is pending for this reader
 	 */
-	bool interrupt_pending;
+	volatile bool interrupt_pending;
 
 	/**
 	 * Thread reference the reader will sleep on

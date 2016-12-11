@@ -121,6 +121,8 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     palSetLine(config->reset_line);
     osalThreadSleepMicroseconds(40);  // Oscillator start-up time
 
+    mfrc522_command(mdp, Command_SoftReset);
+
     // Interrupt pin setup
     // Disable propagation of all communication interrupts
     mfrc522_write_register(mdp, ComIEnReg, 0);
