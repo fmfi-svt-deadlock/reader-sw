@@ -8,10 +8,7 @@
 #include "string.h"
 #include "hal_mfrc522_internal.h"
 
-// TODO maybe support for this should be a compile-time option?
-
 // Self-test expected results
-// TODO this should be somewhere else!
 // Version 0.0 (0x90)
 static const uint8_t selftest_result_ver00[] = {
     0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
@@ -60,7 +57,6 @@ static const uint8_t selftest_result_fudan[] = {
 };
 
 bool mfrc522PerformSelftest(Mfrc522Driver *mdp) {
-    // TODO state check
     // Soft reset
     mfrc522_command(mdp, Command_SoftReset);
 
@@ -81,7 +77,7 @@ bool mfrc522PerformSelftest(Mfrc522Driver *mdp) {
     // Initiate the self test by issuing a CalcCRC command
     mfrc522_command(mdp, Command_CalcCRC);
 
-    // Be an asshole and busy-wait (TODO!)
+    // TODO no busywait
     while ((mfrc522_read_register(mdp, CommandReg) & 0xF) == Command_CalcCRC);
 
     // Read the result

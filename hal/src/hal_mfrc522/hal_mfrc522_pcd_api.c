@@ -18,8 +18,7 @@
 #define DEFINE_AND_SET_mdp(inst)                                              \
     Mfrc522Driver *mdp = (Mfrc522Driver*)((Pcd*)inst)->data;
 
-// TODO counterintuitive!
-#define CHECK_STATE(condition)                                                \
+#define FAIL_IF_STATE(condition)                                              \
     if (condition) { return PCD_BAD_STATE; }
 
 // ----------- COMMON TRANSMISSION ROUTINES -------------
@@ -86,7 +85,8 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         return PCD_OK_TIMEOUT;
     }
 
-    if (message != MFRC522_MSG_INTERRUPT && message != MFRC522_MSG_PEND_INTERRUPT) {
+    if (message != MFRC522_MSG_INTERRUPT &&
+        message != MFRC522_MSG_PEND_INTERRUPT) {
         // OK, this should not have happened. Fail-fast.
         osalSysHalt("Unexpected wakeup message");
     }
@@ -118,12 +118,16 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
             return PCD_ERROR;
         }
         // Indicates collision position.
-        //   - 1: Collision in the first received bit (position: byte 0, bit 0, 0 valid bits received)
-        //   - 8: Collision in the eight received bit (position: byte 0, bit 7, 7 valid bits received)
-        //   - 0: Collision in the 32nd received bit (position: byte 3, bit 7, 31 valid bits receoved)
-        uint8_t coll_pos = ((coll_reg & Mask_CollReg_CollPos) >> CollReg_CollPos);
-        // Get number of valid bits from coll_pos. Decrement by 1 and let it underflow if it was
-        // 0, then trim it to the proper size.
+        //   - 1: Collision in the first received bit
+        //        (position: byte 0, bit 0, 0 valid bits received)
+        //   - 8: Collision in the eight received bit
+        //        (position: byte 0, bit 7, 7 valid bits received)
+        //   - 0: Collision in the 32nd received bit
+        //        (position: byte 3, bit 7, 31 valid bits receoved)
+        uint8_t coll_pos = ((coll_reg & Mask_CollReg_CollPos) >>
+                            CollReg_CollPos);
+        // Get number of valid bits from coll_pos. Decrement by 1 and let it
+        // underflow if it was 0, then trim it to the proper size.
         uint8_t nvb = (coll_pos - 1) & 31;
         // Number of valid bytes + 1 containing a collided bit
         mdp->resp_length = (nvb / 8) + 1;
@@ -135,7 +139,8 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         *resp_length = mdp->resp_length;
     }
     if (mdp->resp_length != 0) {
-        mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response, mdp->resp_length);
+        mfrc522_read_register_burst(mdp, FIFODataReg, mdp->response,
+                                    mdp->resp_length);
     }
 
     return collision_happened ? PCD_OK_COLLISION : PCD_OK;
@@ -153,10 +158,11 @@ pcdstate_t mfrc522GetStateAB(void *inst) {
 pcdresult_t mfrc522ActivateRFAB(void *inst) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_RF_OFF);
+    FAIL_IF_STATE(mdp->state != PCD_RF_OFF);
 
     mfrc522_set_register_bits(mdp, TxControlReg,
-                      (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+                              (1 << TxControlReg_Tx1RFEn) |
+                              (1 << TxControlReg_Tx2RFEn));
     mdp->state = PCD_READY;
     return PCD_OK;
 }
@@ -164,10 +170,11 @@ pcdresult_t mfrc522ActivateRFAB(void *inst) {
 pcdresult_t mfrc522DeactivateRFAB(void *inst) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY);
+    FAIL_IF_STATE(mdp->state != PCD_READY);
 
     mfrc522_clear_register_bits(mdp, TxControlReg,
-                        (1 << TxControlReg_Tx1RFEn) | (1 << TxControlReg_Tx2RFEn));
+                                (1 << TxControlReg_Tx1RFEn) |
+                                (1 << TxControlReg_Tx2RFEn));
     mdp->state = PCD_RF_OFF;
     return PCD_OK;
 }
@@ -181,7 +188,7 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
                                pcdspeed_tx_t tx_spd, pcdmode_t mode) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
+    FAIL_IF_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
     uint8_t rx_speed;
     uint8_t tx_speed;
@@ -225,16 +232,17 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
     }
 
     mfrc522_write_register_bitmask(mdp, TxModeReg, Mask_TxModeReg_TxSpeed,
-                           (tx_speed << TxModeReg_TxSpeed));
+                                   (tx_speed << TxModeReg_TxSpeed));
     mfrc522_write_register_bitmask(mdp, RxModeReg, Mask_RxModeReg_RxSpeed,
-                           (rx_speed << RxModeReg_RxSpeed));
+                                   (rx_speed << RxModeReg_RxSpeed));
 
     if (tx_spd == PCD_TX_SPEED_106 && rx_spd == PCD_RX_SPEED_106
         && mode == PCD_ISO14443_A) {
         // Standard mandates 100% ASK for 106k speed in mode A
         mfrc522_set_register_bits(mdp, TxASKReg, (1 << TxAskReg_Force100ASK));
     } else {
-        mfrc522_clear_register_bits(mdp, TxASKReg, (1 << TxAskReg_Force100ASK));
+        mfrc522_clear_register_bits(mdp, TxASKReg,
+                                    (1 << TxAskReg_Force100ASK));
     }
 
     return PCD_OK;
@@ -245,7 +253,7 @@ pcdresult_t mfrc522TransceiveShortFrameA(void *inst, uint8_t data,
                                          uint32_t timeout_us) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY);
+    FAIL_IF_STATE(mdp->state != PCD_READY);
 
     mdp->state = PCD_ACTIVE;
     prepare_transceive(mdp);
@@ -270,7 +278,7 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
                                             uint32_t timeout_us) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY);
+    FAIL_IF_STATE(mdp->state != PCD_READY);
 
     mdp->state = PCD_ACTIVE;
     prepare_transceive(mdp);
@@ -295,7 +303,7 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
                                             uint32_t timeout_us) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY);
+    FAIL_IF_STATE(mdp->state != PCD_READY);
 
     // TODO anticoll is possible only in 106kBd mode, check and enforce!
 
@@ -303,7 +311,6 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
     prepare_transceive(mdp);
 
     // Write data, set Start Send and set number of valid bytes.
-    // TODO completly forgot about RX align!
     mfrc522_write_register_burst(mdp, FIFODataReg, buffer, length);
     mfrc522_write_register(mdp, BitFramingReg,
                            ((n_last_bits & 0x7) << BitFramingReg_TxLastBits) |
@@ -322,7 +329,7 @@ pcdresult_t mfrc522TransceiveAnticollFrameA(void *inst, uint8_t *buffer,
 uint16_t mfrc522GetResponseLengthA(void *inst) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
+    FAIL_IF_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
     return mdp->resp_length - mdp->resp_read_bytes;
 }
@@ -333,10 +340,11 @@ pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
                                  uint8_t *n_last_bits) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
+    FAIL_IF_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
 
     uint8_t remaining_bytes = mdp->resp_length - mdp->resp_read_bytes;
-    *size_copied = (buffer_size < remaining_bytes) ? buffer_size : remaining_bytes;
+    *size_copied = (buffer_size < remaining_bytes) ?
+                   buffer_size : remaining_bytes;
     memcpy(buffer, mdp->response + mdp->resp_read_bytes, *size_copied);
     mdp->resp_read_bytes += *size_copied;
     if (mdp->resp_read_bytes == mdp->resp_length) {
@@ -372,7 +380,7 @@ pcdresult_t mfrc522CallExtFeature(void *inst, pcdfeature_t feature,
                                   void *params, void *result) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
-    CHECK_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
+    FAIL_IF_STATE(mdp->state != PCD_READY || mdp->state != PCD_RF_OFF);
 
     (void)params;
 

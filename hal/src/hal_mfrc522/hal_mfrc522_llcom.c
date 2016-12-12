@@ -9,8 +9,6 @@
 
 #include "hal_mfrc522_internal.h"
 
-// TODO one-shot functions could use burst functions (DRY!)
-
 void mfrc522_write_register(Mfrc522Driver *mdp, Mfrc522Register reg,
                             uint8_t value) {
     switch(mdp->connection_type) {

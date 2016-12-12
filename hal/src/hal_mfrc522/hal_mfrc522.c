@@ -5,7 +5,6 @@
 
 #if (HAL_USE_MFRC522 == TRUE) || defined(__DOXYGEN__)
 
-// TODO!!! This driver has ugly code style. It requires a code-style pass.
 // Also it should conform to
 // http://www.chibios.org/dokuwiki/doku.php?id=chibios:articles:style_guide
 
@@ -15,8 +14,9 @@
 
 const PcdSParams supported_params = {
     // Supported tx / rx speeds in mode A
-    (PCD_TX_SPEED_106 | PCD_TX_SPEED_212 | PCD_TX_SPEED_424 | PCD_TX_SPEED_848 |
-    PCD_RX_SPEED_106 | PCD_RX_SPEED_212 | PCD_RX_SPEED_424 | PCD_RX_SPEED_848),
+    (PCD_TX_SPEED_106 | PCD_TX_SPEED_212 | PCD_TX_SPEED_424 |
+     PCD_TX_SPEED_848 | PCD_RX_SPEED_106 | PCD_RX_SPEED_212 |
+     PCD_RX_SPEED_424 | PCD_RX_SPEED_848),
     // Supported tx / rx speeds in mode B
     0,
     // Support for assymetric speed setting
@@ -154,8 +154,7 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
 
     // Apply the provided configuration
     mfrc522Reconfig(mdp, config);
-    // Apply the default transmission params
-    // TODO not elegant
+    // Apply default transmission params
     pcdSetParamsAB(&mdp->pcd, PCD_RX_SPEED_106, PCD_TX_SPEED_106,
                    PCD_ISO14443_A);
 }
@@ -166,29 +165,31 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
                   "Incorrect state!");
     osalDbgCheck(config != NULL);
 
-    // TODO maybe nicer code formatting?
     // TODO state explicitly that interrupt-related settings will **NOT** be
     // changed.
 
-    mfrc522_write_register_bitmask(mdp, ModeReg, (ModeReg_PolMFin | Mask_ModeReg_CRCPreset),
-                           (config->MFIN_polarity ? 1 : 0 << ModeReg_PolMFin) |
-                           (ModeReg_CRCPreset_6363 << ModeReg_CRCPreset));
+    mfrc522_write_register_bitmask(mdp, ModeReg,
+        (ModeReg_PolMFin | Mask_ModeReg_CRCPreset),
+        (config->MFIN_polarity ? 1 : 0 << ModeReg_PolMFin) |
+        (ModeReg_CRCPreset_6363 << ModeReg_CRCPreset));
 
     mfrc522_write_register_bitmask(mdp, TxModeReg, TxModeReg_InvMod,
-                           (config->inverse_modulation ? 1 : 0 << TxModeReg_InvMod));
+        (config->inverse_modulation ? 1 : 0 << TxModeReg_InvMod));
 
     mfrc522_write_register(mdp, TxControlReg, config->tx_control_reg);
 
-    mfrc522_write_register_bitmask(mdp, TxSelReg, (Mask_TxSelReg_DriverSel | Mask_TxSelReg_MFOutSel),
-                           (config->driver_input_select << TxSelReg_DriverSel) |
-                           (config->mfout_select << TxSelReg_MFOutSel));
+    mfrc522_write_register_bitmask(mdp, TxSelReg,
+        (Mask_TxSelReg_DriverSel | Mask_TxSelReg_MFOutSel),
+        (config->driver_input_select << TxSelReg_DriverSel) |
+        (config->mfout_select << TxSelReg_MFOutSel));
 
     mfrc522_write_register_bitmask(mdp, RxSelReg, Mask_RxSelReg_UARTSel,
                            (config->cl_uart_in_sel << RxSelReg_UARTSel));
 
-    mfrc522_write_register_bitmask(mdp, RxThresholdReg, (Mask_RxThresholdReg_CollLevel | Mask_RxThresholdReg_CollLevel),
-                           ((config->min_rx_signal_strength & 0xF) << RxThresholdReg_MinLevel) |
-                           ((config->min_rx_collision_level & 0x7) << RxThresholdReg_CollLevel));
+    mfrc522_write_register_bitmask(mdp, RxThresholdReg,
+        (Mask_RxThresholdReg_CollLevel | Mask_RxThresholdReg_CollLevel),
+        ((config->min_rx_signal_strength & 0xF) << RxThresholdReg_MinLevel) |
+        ((config->min_rx_collision_level & 0x7) << RxThresholdReg_CollLevel));
 
     mfrc522_write_register(mdp, DemodReg, config->demod_reg);
 
@@ -196,14 +197,14 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
                            (config->receiver_gain) << RFCfgReg_RxGain);
 
     mfrc522_write_register(mdp, GsNReg,
-                   ((config->transmit_power_n & 0xF) << GsNReg_CWGsN) |
-                   ((config->modulation_index_n & 0xF) << GsNReg_ModGsN));
+        ((config->transmit_power_n & 0xF) << GsNReg_CWGsN) |
+        ((config->modulation_index_n & 0xF) << GsNReg_ModGsN));
 
     mfrc522_write_register_bitmask(mdp, CWGsPReg, Mask_CWGsPReg_CWGsP,
-                           (config->transmit_power_p & 0x3F) << CWGsPReg_CWGsP);
+        (config->transmit_power_p & 0x3F) << CWGsPReg_CWGsP);
 
     mfrc522_write_register_bitmask(mdp, ModGsPReg, Mask_ModGsPReg_ModGsP,
-                           (config->modulation_index_p & 0x3F) << ModGsPReg_ModGsP);
+        (config->modulation_index_p & 0x3F) << ModGsPReg_ModGsP);
 
     mdp->current_config = config;
 }
