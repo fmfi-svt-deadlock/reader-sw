@@ -103,7 +103,9 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     osalDbgAssert(mdp->state == PCD_STOP, "Incorrect state!");
     osalDbgCheck(config != NULL);
 
-    // TODO thread safety?
+    osalSysLock();
+    // MAX_DEVICES is usually 1, almost definitely less than 16, this loop
+    // should't take long, therefore we can afford it in a lock zone.
     uint8_t i = 0;
     while(true) {
         if (i == MFRC522_MAX_DEVICES) {
@@ -115,6 +117,8 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
         }
         i++;
     }
+    osalSysUnlock();
+
 
     // Enable the MFRC522
     mdp->reset_line = config->reset_line;
@@ -212,7 +216,9 @@ void mfrc522Stop(Mfrc522Driver *mdp) {
     palClearLine(mdp->reset_line);
     mdp->state = PCD_STOP;
 
-    // TODO thread safety?
+    osalSysLock();
+    // MAX_DEVICES is usually 1, almost definitely less than 16, this loop
+    // should't take long, therefore we can afford it in a lock zone.
     uint8_t i = 0;
     while(true) {
         if (i == MFRC522_MAX_DEVICES) {
@@ -224,6 +230,7 @@ void mfrc522Stop(Mfrc522Driver *mdp) {
         }
         i++;
     }
+    osalSysUnlock();
 }
 
 #endif /* HAL_USE_MFRC522 == TRUE */
