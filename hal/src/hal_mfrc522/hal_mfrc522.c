@@ -144,6 +144,8 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     mdp->extp = config->extp;
     mdp->interrupt_channel = config->interrupt_channel;
 
+    osalMutexObjectInit(&(mdp->mutex));
+
     mdp->state = PCD_RF_OFF;
 
     // Apply the provided configuration

@@ -406,6 +406,11 @@ typedef struct {
 	 */
 	uint8_t resp_read_bytes;
 
+	/**
+	 * Mutex for mutual access
+	 */
+	mutex_t mutex;
+
 } Mfrc522Driver;
 
 /*===========================================================================*/

@@ -35,7 +35,6 @@ static void prepare_transceive(Mfrc522Driver *mdp) {
     mdp->interrupt_pending = false;
     // Before enabling interrupts check them. They should definitelly be
     // cleared at this point.
-    uint8_t t = mfrc522_read_register(mdp, ComIrqReg);
     uint8_t irqs = mfrc522_read_register(mdp, ComIrqReg) &
                    ((1 << ComIEnReg_RxIEn) | (1 << ComIEnReg_ErrIEn));
     if (irqs) {
@@ -348,11 +347,17 @@ pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
 }
 
 void mfrc522AcquireBus(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
 
+    osalMutexLock(&(mdp->mutex));
 }
 
 void mfrc522ReleaseBus(void *inst) {
+    MEMBER_FUNCTION_CHECKS(inst);
+    DEFINE_AND_SET_mdp(inst);
 
+    osalMutexUnlock(&(mdp->mutex));
 }
 
 bool mfrc522SupportsExtFeature(void *inst, pcdfeature_t feature) {

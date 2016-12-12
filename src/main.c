@@ -13,19 +13,19 @@ static THD_FUNCTION(init_thread, p) {
 
     devicesInit();
 
-    uint16_t resp_len;
-    pcdresult_t result;
-    result = pcdActivateRFAB(PCD);
-    result = pcdTransceiveShortFrameA(PCD, 0x26, &resp_len, 100000);
-    uint8_t anticoll[] = {0x93, 0x20};
-    result = pcdTransceiveAnticollFrameA(PCD, anticoll, 2, 0, 0, &resp_len, 100000);
-    uint8_t resp[20];
-    uint8_t last_bits;
-    result = pcdGetRespAB(PCD, 20, resp, &resp_len, &last_bits);
-    // Hardcoded anticoll
-    uint8_t anticoll2[] = {0x93, 0x23, 0x06};
-    result = pcdTransceiveAnticollFrameA(PCD, anticoll2, 3, 3, 3, &resp_len, 100000);
-    result = pcdGetRespAB(PCD, 20, resp, &resp_len, &last_bits);
+    // uint16_t resp_len;
+    // pcdresult_t result;
+    // result = pcdActivateRFAB(PCD);
+    // result = pcdTransceiveShortFrameA(PCD, 0x26, &resp_len, 100000);
+    // uint8_t anticoll[] = {0x93, 0x20};
+    // result = pcdTransceiveAnticollFrameA(PCD, anticoll, 2, 0, 0, &resp_len, 100000);
+    // uint8_t resp[20];
+    // uint8_t last_bits;
+    // result = pcdGetRespAB(PCD, 20, resp, &resp_len, &last_bits);
+    // // Hardcoded anticoll
+    // uint8_t anticoll2[] = {0x93, 0x23, 0x06};
+    // result = pcdTransceiveAnticollFrameA(PCD, anticoll2, 3, 3, 3, &resp_len, 100000);
+    // result = pcdGetRespAB(PCD, 20, resp, &resp_len, &last_bits);
 }
 
 int main(void) {
