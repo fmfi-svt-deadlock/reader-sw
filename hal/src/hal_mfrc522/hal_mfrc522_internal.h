@@ -1,7 +1,78 @@
 /**
  * @file    hal_mfrc522_internal.h
- * @brief   Constants and functions used internally by the MFRC522 driver.
  *
+ * Although most of the drivers in the HAL are contained in one file, the
+ * MFRC522 driver was becoming unreadable, so I've split it between several
+ * files.
+ *
+ *   - `src/hal_mfrc522/hal_mfrc522_internal.h` header contains internal
+ *     constants and internal documentation. It is not supposed to be used
+ *     by application using this driver.
+ *   - `src/hal_mfrc522/hal_mfrc522.c` is the main driver file. It contains
+ *     MFRC522-specific initialization and configuration functions. It also
+ *     contains the interrupt handler only purpose of which is to wake up a
+ *     sleeping thread.
+ *   - `src/hal_mfrc522/hal_mfrc522_ext_api.c` contains implementation of
+ *     extended features. See hal_abstract_iso14443_pcd_ext.h.
+ *   - `src/hal_mfrc522/hal_mfrc522_llcom.c` contains low-level communication
+ *     routines for reading and writing registers of the MFRC522 over various
+ *     connection interfaces.
+ *   - `src/hal_mfrc552/hal_mfrc522_pcd_api.c` contains implementation of
+ *     Pcd API functions for MFRC522.
+ *
+ * Primary goals
+ * -------------
+ *
+ * This driver should provide easy-to-use synchronous API to drivers of
+ * higher protocol layers while being efficient and friendly to other threads
+ * (it suspends the calling thread while it's waiting for data).
+ *
+ * Initialization and configuration functions handling global objects of this
+ * driver must be thread-safe.
+ *
+ * This driver does not guarantee thread safety if single Mfrc522Driver file
+ * is used simultaneously by multiple threads. Those threads should call
+ * #pcdAcquireBus and #pcdReleaseBus to achiveve mutual exclusion.
+ * However, it is safe to use different Mfrc522Driver objects from different
+ * threads simultaneously.
+ *
+ * This driver should be as universal as possible. This is the reason for
+ * (over?)complicated configuration structure. It allows you to, when you
+ * know what are you doing, configure the MFRC522 modulee for your specific
+ * use-case (like using an external modulator with the chip). It is also easy
+ * to use, since default values work out-of-the box with the typical use-case
+ * (like the RFID-RC522 chinese module).
+ *
+ * Thread suspend and interrupt handling
+ * -------------------------------------
+ *
+ * Each time this driver waits for the action of the reader it suspends the
+ * calling thread, to allow other threads to run.
+ *
+ * MFRC522 has a mechanism of waking up the host using its IRQ pin. Host can
+ * conigure which interrupts propagate to the interrupt pin, and later figure
+ * out which interrupt occured by reading a specific register.
+ *
+ * This driver uses the Ext driver provided by ChibiOS to handle these
+ * interrupts. It registers its own interrupt handler, the same for each
+ * interrupt channel. However, in the current version the Ext driver doesn't
+ * allow passing custom parameters to the handler function, therefore when an
+ * interrupt occurs we only know which channel it came from. Then we may wake
+ * up all sleeping driver threads and let every thread check whether the
+ * interrupt is intended for it. This is problemating due to race conditions,
+ * necessity of events buffering, etc.
+ * Instead, we have imposed limitation that each interrupt channel can have
+ * only one reader (and nothing else than the reader) attached to it. Therefore
+ * when an interrupt occures by knowing the interrupt channel we can wake
+ * up the proper thread.
+ *
+ * In addition this wake-up is buffered if the thread couldn't be suspended
+ * in time.
+ *
+ */
+
+/**
+ * @cond
  */
 
 #include "hal_custom.h"
@@ -242,3 +313,7 @@ extern const struct BasePcdVMT mfrc522VMT;
 // hal_mfrc522_ext_api.c
 
 bool mfrc522PerformSelftest(Mfrc522Driver *mdp);
+
+/**
+ * @endcond
+ */

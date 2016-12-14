@@ -1,13 +1,13 @@
 /**
  * @file    hal_mfrc522.h
- * @brief   MFRC522 driver.
+ * @brief   Driver for the MFRC522 module.
  * @details This is a driver for the MFRC522 Mifare and NTAG frontend. It
  *          supports the MFRC522 chip connected over various interfaces.
  *          It exports an Pcd object for use by other layers.
  *
- * Note: This driver requires the EXT driver to be enabled **and configured
+ * Note: This driver requires the EXT driver to be enabled and configured
  * with non-`const` EXTConfig strcture (as opposed to one documented by
- * function extStart)**!
+ * function extStart)!
  *
  * This driver invokes the extSetChannelMode function, see its docs for
  * explanation.
@@ -102,12 +102,16 @@
 /**
  * @brief Config options for the MFRC522 module
  *
- * **Fill with default values before modification using mfrc522DefaultConfig!**
- * If you don't understand any option, just leave it be. These options are
- * intended for advanced configuration of the module if you have special needs,
- * otherwise default values are just fine.
+ * In order for the driver to function properly you have to specify:
+ *   - `EXTDriver *extp`
+ *   - `expchannel_t interrupt_channel`
+ *   - `void *reset_line`
+ *
+ * Rest of these options are intended for advanced configuration of the module
+ * if you have special needs, otherwise default values are just fine.
  *
  * If you need to modify something consult the MFRC522 Datasheet.
+ *
  */
 typedef struct {
 
@@ -117,7 +121,8 @@ typedef struct {
 	EXTDriver *extp;
 
 	/**
-	 * EXT channel to which the IRQ pin is connected
+	 * EXT channel to which the IRQ pin (**and only the IRQ pin**) of the
+	 * MFRC522 is connected.
 	 */
 	expchannel_t interrupt_channel;
 
@@ -313,7 +318,8 @@ typedef struct {
 /**
  * @brief Structure representing a MFRC522 driver.
  *
- * Don't modify any of these values.
+ * For functions expecting a Pcd object use the `pcd` memeber of this
+ * structure. Otherwise don't modify any of these values.
  */
 typedef struct {
 	/**
@@ -426,23 +432,91 @@ typedef struct {
 extern "C" {
 #endif
 
+/**
+ * @brief      Initializes the MFRC522 driver.
+ *
+ * @note       This function is called implicitly by halCustomInit, no need
+ *             to call it explicitly.
+ */
 void mfrc522Init(void);
-void mfrc522DefaultConfig(Mfrc522Config *config);
 
 #if MFRC522_USE_SPI || defined(__DOXYGEN__)
+/**
+ * @brief      Initializes the driver object for a MFRC522 module connected
+ *             over the SPI.
+ *
+ * @param      mdp   Uninitialized driver object.
+ * @param      spip  Initialized and started SPI driver object.
+ */
 void mfrc522ObjectInitSPI(Mfrc522Driver *mdp, SPIDriver *spip);
 #endif
 
 #if MFRC522_USE_I2C || defined(__DOXYGEN__)
+/**
+ * @brief      Initializes the driver object for a MFRC522 module connected
+ *             over the I2C
+ *
+ * @note 	   Not yet implemented!
+ *
+ * @param      mdp   Uninitialized driver object.
+ * @param      i2cp  Initialized and started I2C driver object
+ */
 void mfrc522ObjectInitI2C(Mfrc522Driver *mdp, I2CDriver *i2cp);
 #endif
 
 #if MFRC522_USE_UART || defined(__DOXYGEN__)
+/**
+ * @brief      Initializes the driver object for a MFRC522 module connected
+ *             over the Serial
+ *
+ * @note 	   Not yet implemented!
+ *
+ * @param      mdp   Uninitialized driver object.
+ * @param      sdp   Initialized and started Serial driver object
+ */
 void mfrc522ObjectInitSerial(Mfrc522Driver *mdp, SerialDriver *sdp);
 #endif
 
+/**
+ * @brief      Starts the MFRC522 module
+ *
+ * This function powers up, soft-resets the MFRC522 module, initializes,
+ * configures it and register is for use with this driver.
+ * It also reconfigures the provided Ext driver and register its own interrupt
+ * handler to handle interrupts on channel config->interrupt_channel.
+ *
+ * @param      mdp     Initialized driver object
+ * @param      config  Configuration to apply
+ */
 void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config);
+
+/**
+ * @brief      Reconfigures the MFRC522 module without resetting it
+ *
+ * This function reprograms control registers of the MFRC522 module without
+ * resetting it, which is useful for hot-swapping MFRC522-specific config
+ * options during the module run-time.
+ *
+ * This function won't reconfig the following options:
+ *
+ *   - `EXTDriver *extp`
+ *   - `expchannel_t interrupt_channel`
+ *   - `void *reset_line`
+ *
+ * The only way to change these is to stop and restart the module.
+ *
+ * @param      mdp     Started driver object
+ * @param      config  Configuration to apply
+ */
 void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config);
+
+/**
+ * @brief      Stops the MFRC522 module
+ *
+ * Unregisters this module from this driver and powers it down.
+ *
+ * @param      mdp   Started driver object
+ */
 void mfrc522Stop(Mfrc522Driver *mdp);
 
 #ifdef __cplusplus

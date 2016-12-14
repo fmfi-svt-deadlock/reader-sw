@@ -100,9 +100,9 @@ typedef struct {
 
 // Definition of a member method
 result_t my_funct(FunnyObj obj, uint8_t param1, uint8_t param2) {
-    ((my_privatedata)(obj->data))->accumulator += param1;
-    ((my_privatedata)(obj->data))->accumulator += param2;
-    return ((my_privatedata)(obj->data))->accumulator;
+    ((my_privatedata*)(obj->data))->accumulator += param1;
+    ((my_privatedata*)(obj->data))->accumulator += param2;
+    return ((my_privatedata*)(obj->data))->accumulator;
 }
 
 // Something like a constructor
@@ -112,12 +112,8 @@ FunnyObj my_create_instance(uint8_t init_acc) {
     obj->data = malloc(sizeof(my_privatedata));
 
     obj->vmt->funct = &my_funct;
-    ((my_privatedata)(obj->data))->accumulator = 0;
+    ((my_privatedata*)(obj->data))->accumulator = 0;
 }
 ```
 
 Of course you could do some more preprocessor magic, but that would violate the principle of least astonishment. This by itself borders on violating it, however, it is the only way to write truly modular protocol stack which allows for easy component swapping and using multiple components of the same type (e.g. reader drivers) simultaneously.
-
-### Documentation of abstract classes
-
-TODO where? Should the documentation document the defines, or VMT methods?
