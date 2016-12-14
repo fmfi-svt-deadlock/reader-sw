@@ -53,8 +53,10 @@ static msg_t wait_for_response(Mfrc522Driver *mdp, uint32_t timeout_us) {
     osalSysLock();
     msg_t message;
     if (!mdp->interrupt_pending) {
+        palSetPad(GPIOA, GPIOA_LED_G2);
         message = osalThreadSuspendTimeoutS(&mdp->tr,
                                             OSAL_US2ST(timeout_us));
+        palClearPad(GPIOA, GPIOA_LED_G2);
     } else {
         message = MFRC522_MSG_PEND_INTERRUPT;
     }

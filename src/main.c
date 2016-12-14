@@ -4,7 +4,7 @@
 #include "board_devices.h"
 #include "main.h"
 
-static THD_WORKING_AREA(init_thread_wa, 256);
+static THD_WORKING_AREA(init_thread_wa, 512);
 static THD_FUNCTION(init_thread, p) {
     (void)p;
 
@@ -13,9 +13,14 @@ static THD_FUNCTION(init_thread, p) {
 
     devicesInit();
 
-    // uint16_t resp_len;
-    // pcdresult_t result;
-    // result = pcdActivateRFAB(PCD);
+    pcdresult_t result_r;
+    result_r = pcdActivateRFAB(PCD);
+
+    iso14443result_t result_p;
+    Picc cards[10];
+    bool is_that_all;
+    result_p = iso14443FindCards(PCD, cards, 10, &is_that_all);
+
     // result = pcdTransceiveShortFrameA(PCD, 0x26, &resp_len, 100000);
     // uint8_t anticoll[] = {0x93, 0x20};
     // result = pcdTransceiveAnticollFrameA(PCD, anticoll, 2, 0, 0, &resp_len, 100000);

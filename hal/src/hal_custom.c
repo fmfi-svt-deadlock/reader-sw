@@ -39,6 +39,7 @@
 void halCustomInit(void) {
 	//TODO conditionally
 	mfrc522Init();
+	iso14443PiccInit();
 }
 
 #endif /* HAL_USE_CUSTOM */
