@@ -27,6 +27,12 @@ typedef enum {
 	ISO14443_ERROR
 } iso14443result_t;
 
+typedef enum {
+    PICC_UID_4,
+    PICC_UID_7,
+    PICC_UID_10
+} PiccUidLen;
+
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -40,7 +46,10 @@ typedef enum {
 /*===========================================================================*/
 
 typedef struct {
-	CRCard crcard;
+    uint8_t     uid[10];
+    PiccUidLen  uid_len;
+    bool        iso_compliant;
+	CRCard      crcard;
 } Picc;
 
 /*===========================================================================*/

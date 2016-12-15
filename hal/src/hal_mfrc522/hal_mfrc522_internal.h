@@ -69,6 +69,11 @@
  * In addition this wake-up is buffered if the thread couldn't be suspended
  * in time.
  *
+ * Anticollision detection
+ * -----------------------
+ *
+ * TODO
+ *
  */
 
 /**
