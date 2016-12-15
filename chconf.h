@@ -250,7 +250,7 @@
  *          requirements.
  * @note    Requires @p CH_CFG_USE_MESSAGES.
  */
-#define CH_CFG_USE_MESSAGES_PRIORITY        FALSE
+#define CH_CFG_USE_MESSAGES_PRIORITY        TRUE
 
 /**
  * @brief   Mailboxes APIs.
@@ -334,7 +334,11 @@
  *
  * @note    The default is @p FALSE.
  */
+#if defined(DEBUG)
 #define CH_DBG_SYSTEM_STATE_CHECK           TRUE
+#else
+#define CH_DBG_SYSTEM_STATE_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, parameters checks.
@@ -343,7 +347,11 @@
  *
  * @note    The default is @p FALSE.
  */
+#if defined(DEBUG)
 #define CH_DBG_ENABLE_CHECKS                TRUE
+#else
+#define CH_DBG_ENABLE_CHECKS                FALSE
+#endif
 
 /**
  * @brief   Debug option, consistency checks.
@@ -353,7 +361,11 @@
  *
  * @note    The default is @p FALSE.
  */
+#if defined(DEBUG)
 #define CH_DBG_ENABLE_ASSERTS               TRUE
+#else
+#define CH_DBG_ENABLE_ASSERTS               FALSE
+#endif
 
 /**
  * @brief   Debug option, trace buffer.
@@ -362,7 +374,11 @@
  *
  * @note    The default is @p FALSE.
  */
+#if defined(DEBUG)
 #define CH_DBG_ENABLE_TRACE                 TRUE
+#else
+#define CH_DBG_ENABLE_TRACE                 FALSE
+#endif
 
 /**
  * @brief   Debug option, stack checks.
@@ -374,7 +390,11 @@
  * @note    The default failure mode is to halt the system with the global
  *          @p panic_msg variable set to @p NULL.
  */
+#if defined(DEBUG)
 #define CH_DBG_ENABLE_STACK_CHECK           TRUE
+#else
+#define CH_DBG_ENABLE_STACK_CHECK           FALSE
+#endif
 
 /**
  * @brief   Debug option, stacks initialization.
@@ -384,7 +404,11 @@
  *
  * @note    The default is @p FALSE.
  */
+#if defined(DEBUG)
 #define CH_DBG_FILL_THREADS                 TRUE
+#else
+#define CH_DBG_FILL_THREADS                 FALSE
+#endif
 
 /**
  * @brief   Debug option, threads profiling.

@@ -3,10 +3,15 @@
 # NOTE: Can be overridden externally.
 #
 
+DEBUG_BUILD := yes
+
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16
-  # USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  ifeq ($(DEBUG_BUILD),yes)
+  	USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16
+  else
+  	USE_OPT = -O2 -fomit-frame-pointer -falign-functions=16
+  endif
 endif
 
 # C specific options here (added to USE_OPT).
@@ -31,10 +36,11 @@ endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
-  # This is turned off as a workaround of a gcc 5.3.0 bug (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65380)
-  # The bug is still present in gcc 6.1.1
-  # Finally not present in 6.2.0, consider turning this back on again
-  USE_LTO = no
+  # If you experience an internal compiler error try turning this off as a
+  # workaround of this gcc 5.3.0 bug:
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65380
+  # The bug was still present in gcc 6.1.1, however not in 6.2.0
+  USE_LTO = yes
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
@@ -236,7 +242,11 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+ifeq ($(DEBUG_BUILD),yes)
+  UDEFS = -DDEBUG
+else
+  UDEFS =
+endif
 
 # Define ASM defines here
 UADEFS =
