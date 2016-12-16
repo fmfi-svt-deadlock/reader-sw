@@ -249,7 +249,11 @@ else
 endif
 
 # Define ASM defines here
-UADEFS =
+ifeq ($(DEBUG_BUILD),yes)
+  UADEFS = -DDEBUG
+else
+  UADEFS =
+endif
 
 # List all user directories here
 UINCDIR =
