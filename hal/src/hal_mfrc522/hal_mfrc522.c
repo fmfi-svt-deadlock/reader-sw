@@ -206,6 +206,12 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     mfrc522_write_register_bitmask(mdp, ModGsPReg, Mask_ModGsPReg_ModGsP,
         (config->modulation_index_p & 0x3F) << ModGsPReg_ModGsP);
 
+    // Without this, the CollPosNotValid bit in CollReg would be set until
+    // the last bit was received, despite CollErr error being set and
+    // interrupt firing sooner. The driver would then not be able to
+    // determine the collision position.
+    mfrc522_clear_register_bits(mdp, CollReg, (1 << CollReg_ValuesAfterColl));
+
     mdp->current_config = config;
 }
 

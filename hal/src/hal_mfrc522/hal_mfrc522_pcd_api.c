@@ -136,7 +136,8 @@ static pcdresult_t handle_response(Mfrc522Driver *mdp,
         *resp_length = mdp->resp_length;
         mdp->resp_last_valid_bits = nvb % 8;
     } else {
-        mdp->resp_last_valid_bits = 0;
+        // The whole byte is valid.
+        mdp->resp_last_valid_bits = 8;
         mdp->resp_length = mfrc522_read_register(mdp, FIFOLevelReg);
         *resp_length = mdp->resp_length;
     }
@@ -351,6 +352,8 @@ pcdresult_t mfrc522GetResponseAB(void *inst, uint16_t buffer_size,
     mdp->resp_read_bytes += *size_copied;
     if (mdp->resp_read_bytes == mdp->resp_length) {
         *n_last_bits = mdp->resp_last_valid_bits;
+    } else {
+        *n_last_bits = 8;
     }
 
     return PCD_OK;
