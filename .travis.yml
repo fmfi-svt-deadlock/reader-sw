@@ -6,6 +6,7 @@ before_install:
 install:
   - cd docs && virtualenv _venv && source _venv/bin/activate && pip install -r requirements.txt && cd ..
 script:
-  - make
+  - make clean && make
   - cd docs && make html && cd ..
   - make test
+  - make clean && DEBUG_BUILD=no make
