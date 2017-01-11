@@ -23,6 +23,12 @@ const PcdSParams supported_params = {
     true,
     // Supported operation modes (A or B)
     PCD_ISO14443_A,
+    // Support for generating CRC during tx/rx
+    (PCD_TX_SPEED_106 | PCD_TX_SPEED_212 | PCD_TX_SPEED_424 |
+     PCD_TX_SPEED_848 | PCD_RX_SPEED_106 | PCD_RX_SPEED_212 |
+     PCD_RX_SPEED_424 | PCD_RX_SPEED_848),
+    // Support for turning of CRC generation during tx/rx
+    (PCD_TX_SPEED_106 | PCD_RX_SPEED_106),
     // Max tx frame size
     64,
     // Max rx frame size
@@ -156,7 +162,7 @@ void mfrc522Start(Mfrc522Driver *mdp, const Mfrc522Config *config) {
     mfrc522Reconfig(mdp, config);
     // Apply default transmission params
     pcdSetParamsAB(&mdp->pcd, PCD_RX_SPEED_106, PCD_TX_SPEED_106,
-                   PCD_ISO14443_A);
+                   PCD_ISO14443_A, false, false);
 }
 
 void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
@@ -192,6 +198,7 @@ void mfrc522Reconfig(Mfrc522Driver *mdp, const Mfrc522Config *config) {
         ((config->min_rx_collision_level & 0x7) << RxThresholdReg_CollLevel));
 
     mfrc522_write_register(mdp, DemodReg, config->demod_reg);
+
 
     mfrc522_write_register_bitmask(mdp, RFCfgReg, Mask_RFCfgReg_RxGain,
                            (config->receiver_gain) << RFCfgReg_RxGain);

@@ -182,6 +182,7 @@ typedef enum {
 #define TxModeReg_TxSpeed_212           0b001
 #define TxModeReg_TxSpeed_424           0b010
 #define TxModeReg_TxSpeed_848           0b011
+#define TxModeReg_TxCRCEn               7
 #define Mask_TxModeReg_TxSpeed          (0x7 << TxModeReg_TxSpeed)
 
 #define RxModeReg_RxSpeed               4
@@ -189,6 +190,7 @@ typedef enum {
 #define RxModeReg_RxSpeed_212           0b001
 #define RxModeReg_RxSpeed_424           0b010
 #define RxModeReg_RxSpeed_848           0b011
+#define RxModeReg_RxCRCEn               7
 #define Mask_RxModeReg_RxSpeed          (0x7 << RxModeReg_RxSpeed)
 
 #define TxSelReg_DriverSel              4

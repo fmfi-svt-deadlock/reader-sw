@@ -188,7 +188,8 @@ const PcdSParams* mfrc522GetSupportedParamsAB(void *inst) {
 }
 
 pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
-                               pcdspeed_tx_t tx_spd, pcdmode_t mode) {
+                               pcdspeed_tx_t tx_spd, pcdmode_t mode,
+                               bool generate_CRC, bool verify_CRC) {
     MEMBER_FUNCTION_CHECKS(inst);
     DEFINE_AND_SET_mdp(inst);
     FAIL_IF_STATE(mdp->state != PCD_READY && mdp->state != PCD_RF_OFF);
@@ -234,10 +235,20 @@ pcdresult_t mfrc522SetParamsAB(void *inst, pcdspeed_rx_t rx_spd,
             return PCD_UNSUPPORTED;
     }
 
-    mfrc522_write_register_bitmask(mdp, TxModeReg, Mask_TxModeReg_TxSpeed,
-                                   (tx_speed << TxModeReg_TxSpeed));
-    mfrc522_write_register_bitmask(mdp, RxModeReg, Mask_RxModeReg_RxSpeed,
-                                   (rx_speed << RxModeReg_RxSpeed));
+    if (rx_spd != PCD_RX_SPEED_106 && !verify_CRC) {
+        // CRC verification can be turned off only at 106kBd
+        return PCD_UNSUPPORTED;
+    }
+
+    if (tx_spd != PCD_TX_SPEED_106 && !generate_CRC) {
+        // CRC generation can be turned off only at 106kBd
+        return PCD_UNSUPPORTED;
+    }
+
+    mfrc522_write_register_bitmask(mdp, TxModeReg, Mask_TxModeReg_TxSpeed | (1 << TxModeReg_TxCRCEn),
+                                   (tx_speed << TxModeReg_TxSpeed) | (generate_CRC << TxModeReg_TxCRCEn));
+    mfrc522_write_register_bitmask(mdp, RxModeReg, Mask_RxModeReg_RxSpeed | (1 << RxModeReg_RxCRCEn),
+                                   (rx_speed << RxModeReg_RxSpeed) | (verify_CRC << RxModeReg_RxCRCEn));
 
     if (tx_spd == PCD_TX_SPEED_106 && rx_spd == PCD_RX_SPEED_106
         && mode == PCD_ISO14443_A) {
@@ -286,6 +297,8 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
     mdp->state = PCD_ACTIVE;
     prepare_transceive(mdp);
 
+    uint8_t tmp1 = mfrc522_read_register(mdp, CRCResultRegH);
+
     // Write data, set Start Send
     mfrc522_write_register_burst(mdp, FIFODataReg, buffer, length);
     mfrc522_write_register(mdp, BitFramingReg, (1 << BitFramingReg_StartSend));
@@ -293,6 +306,9 @@ pcdresult_t mfrc522TransceiveStandardFrameA(void *inst, uint8_t *buffer,
     msg_t message = wait_for_response(mdp, timeout_us);
 
     pcdresult_t status = handle_response(mdp, message, resp_length, false);
+
+    tmp1 = mfrc522_read_register(mdp, CRCResultRegH);
+
     cleanup_transceive(mdp);
     mdp->state = PCD_READY;
     return status;

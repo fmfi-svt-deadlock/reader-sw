@@ -183,6 +183,8 @@ typedef struct {
     uint8_t  supported_speedsB;     /**< Bit mask of supported tx/rx speeds  */
     bool     supported_asym_speeds; /**< Support of asymetric speed setting  */
     uint8_t  supported_modes;       /**< Bit mask of supported modes (A or B)*/
+    uint8_t  supported_crc_on;      /**< Support for automatic CRC generation*/
+    uint8_t  supported_crc_off;     /**< Whether CRC gen can be off at the given speed            */
     uint16_t max_tx_size;           /**< Maximum Transmit buffer size        */
     uint16_t max_rx_size;           /**< Maximum Receive buffer size         */
 } PcdSParams;
@@ -265,6 +267,9 @@ struct BasePcdVMT {
      * @param[in]  rx_spd  desired reception speed
      * @param[in]  tx_spd  desired transmission speed
      * @param[in]  mode    desired communication mode
+     * @param[in]  generate_CRC Whether the CRC should be generated and transmitted automatically
+     *                          during transmission
+     * @param[in]  verify_CRC Whether the CRC should be verified automatically during reception
      *
      * @retval     PCD_OK Parameters applied successfully. State won't change.
      * @retval     PCD_BAD_STATE Parameters can't be changed now. State
@@ -274,7 +279,8 @@ struct BasePcdVMT {
      * @retval     PCD_ERROR An error has occured. State won't change.
      */
     pcdresult_t (*setParamsAB)(void *inst, pcdspeed_rx_t rx_spd,
-                               pcdspeed_tx_t tx_spd, pcdmode_t mode);
+                               pcdspeed_tx_t tx_spd, pcdmode_t mode,
+                               bool generate_CRC, bool verify_CRC);
 
     /**
      * @brief      Transmits a 'Short Frame' and blocks until the response is
@@ -534,8 +540,8 @@ typedef struct {
 /**
  * @see BasePcdVMT.setParamsAB
  */
-#define pcdSetParamsAB(ip, rx_spd, tx_spd, mode)                              \
-        ((ip)->vmt->setParamsAB(ip, rx_spd, tx_spd, mode))
+#define pcdSetParamsAB(ip, rx_spd, tx_spd, mode, txcrc, rxcrc)                \
+        ((ip)->vmt->setParamsAB(ip, rx_spd, tx_spd, mode, txcrc, rxcrc))
 
 /**
  * @see BasePcdVMT.transceiveShortFrameA
