@@ -1,5 +1,5 @@
-# List of all the board related files.
-BOARDSRC = $(CUSTOM_HAL)/boards/reader-revA/board.c
-
-# Required include directories
-BOARDINC = $(CUSTOM_HAL)/boards/reader-revA
+LDSCRIPT 		 = $(STARTUPLD)/STM32F072xB.ld
+FW_FLASH_ADDRESS = 0x08000000
+MCU      		 = cortex-m0
+BOARDSRC 		 = $(CUSTOM_HAL)/boards/reader-revA/board.c
+BOARDINC 		 = $(CUSTOM_HAL)/boards/reader-revA

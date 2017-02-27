@@ -44,7 +44,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Deadlock/reader-sw'
-copyright = u'2016, FMFI ŠVT'
+copyright = u'2018, FMFI ŠVT'
 author = u'FMFI ŠVT'
 
 # The version info for the project you're documenting, acts as replacement for

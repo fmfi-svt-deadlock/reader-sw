@@ -46,6 +46,7 @@ ifeq ($(USE_LTO),)
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
+# TODO this is also MCU specific and should not be here!
 ifeq ($(USE_THUMB),)
   USE_THUMB = yes
 endif
@@ -57,8 +58,14 @@ endif
 
 # If enabled, this option makes the build process faster by not compiling
 # modules not used in the current configuration.
+#
+# It is disabled for Deadlock because ChibiOS makefiles have hardcoded paths
+# to `chconf.h` and `halconf.h`, but we want them to be potentially different
+# for each flavour.
+# This setting only makes compilation faster, it does not result in larger
+# firmware file. And we don't care about compilation speed.
 ifeq ($(USE_SMART_BUILD),)
-  USE_SMART_BUILD = yes
+  USE_SMART_BUILD = no
 endif
 
 #
@@ -89,30 +96,14 @@ endif
 # Project, sources and paths
 #
 
+SOURCES_ROOT      = src
+
+DEADLOCK_BOARDS   = hal/boards
+# TODO!
+BOARD_FOLDER      = $(DEADLOCK_BOARDS)/reader-revA
+
 # Define project name here
 PROJECT = deadlock-reader
-BOARD   = reader-revA
-
-ifeq ($(BOARD),reader-revA)
-    BOARD_FOLDER = hal/boards/reader-revA
-    # TODO
-    # reader-revA board actually shoud have STM32F052 MCU, this is for development and
-    # not final!
-    LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
-    FW_FLASH_ADDRESS= 0x08000000
-endif
-
-ifeq ($(BOARD),reader-plus-revA)
-    BOARD_FOLDER =
-    $(error Reader Plus revA board is not yes supported!)
-    LDSCRIPT= $(STARTUPLD)/STM32F072xB.ld
-    FW_FLASH_ADDRESS= 0x08000000
-endif
-
-ifndef BOARD_FOLDER
-    $(error Incorrect board specified, fix the BOARD value!)
-endif
-
 
 # Imported source files and paths
 # Warning: order is important!
@@ -120,6 +111,7 @@ CHIBIOS = deps/ChibiOS
 UNITY = deps/Unity/src/
 FFF   = deps/fff/
 CUSTOM_HAL = hal/
+
 TEST_PATH = test/
 TEST_BUILD = build/test/out/
 TEST_RUNNERS = build/test/runners/
@@ -128,18 +120,20 @@ TEST_RESULTS = build/test/results/
 TEST_BUILD_PATHS = $(TEST_BUILD) $(TEST_OBJS) $(TEST_RESULTS) $(TEST_RUNNERS)
 # So that we can test both src/ and hal/
 TEST_ROOT = ./
-SOURCE = src/
+
 # Startup files.
-include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
+# TODO MCU-specific file should not be here!
+include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f0xx.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CUSTOM_HAL)/hal.mk
+# TODO MCU-specific file should not be here!
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F0xx/platform.mk
 include $(BOARD_FOLDER)/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v6m.mk
+include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v6m.mk
 # Other files (optional).
 include $(CHIBIOS)/test/rt/test.mk
 
@@ -152,8 +146,8 @@ CSRC = $(STARTUPSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       $(TESTSRC) \
-       $(shell find $(SOURCE) -type f -name '*.c')
+	   $(shell find $(SOURCES_ROOT) -type f -name '*.c') \
+       $(TESTSRC)
 
 # C test sources.
 TEST_CSRC = $(shell find $(TEST_PATH) -type f -regextype sed -regex '.*-test[0-9]*\.c')
@@ -183,11 +177,21 @@ TCSRC =
 TCPPSRC =
 
 # List ASM source files here
-ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
+ASMSRC =
+ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
-INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) \
+INCDIR = $(CHIBIOS)/os/license \
+         $(STARTUPINC) \
+		 $(KERNINC) \
+		 $(PORTINC) \
+		 $(OSALINC) \
+         $(HALINC) \
+		 $(PLATFORMINC) \
+		 $(BOARDINC) \
+		 $(TESTINC) \
          $(CHIBIOS)/os/various \
+		 $(SOURCES_ROOT) \
+		 $(SOURCES_ROOT)/conf
 
 #
 # Project, sources and paths
@@ -196,8 +200,6 @@ INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
 ##############################################################################
 # Compiler settings
 #
-
-MCU  = cortex-m0
 
 #TRGT = arm-elf-
 TRGT = arm-none-eabi-
@@ -219,7 +221,7 @@ BIN  = $(CP) -O binary
 TEST_TRGT   =
 TEST_CC     = $(TEST_TRGT)gcc
 TEST_LD     = $(TEST_TRGT)gcc
-TEST_INCDIR = $(INCDIR) src/ $(FFF)
+TEST_INCDIR = $(INCDIR) $(SOURCES_ROOT) $(FFF)
 TEST_INCPARAMS = $(foreach d, $(TEST_INCDIR), -I$d)
 TEST_CFLAGS = -I. -I$(UNITY) $(TEST_INCPARAMS) -DTEST
 
@@ -230,7 +232,7 @@ AOPT =
 TOPT = -mthumb -DTHUMB
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes -Wimplicit-fallthrough=0
 
 # Define C++ warning options here
 CPPWARN = -Wall -Wextra -Wundef
@@ -270,7 +272,7 @@ ULIBS =
 # End of user defines
 ##############################################################################
 
-RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
+RULESPATH = $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
 ##############################################################################
@@ -292,7 +294,21 @@ debugl: build/deadlock-reader.elf
 	pkill st-util
 
 #
+# End of helper flash and debug commands
+###############################################################################
+
+
+###############################################################################
+# Start of gpg signing helper commands
 #
+
+%.sig: %
+	gpg --output $@ --detach-sig $<
+
+sign: build/deadlock-reader.bin.sig build/deadlock-reader.elf.sig
+
+#
+# End of gpg signing helper commands
 ##############################################################################
 
 ##############################################################################
@@ -353,8 +369,6 @@ $(TEST_RESULTS)%.result: $(TEST_BUILD)%.out
 RESULTS = $(patsubst $(TEST_PATH)%.c,$(TEST_RESULTS)%.result,$(TEST_CSRC))
 TEST_EXECS = $(patsubst $(TEST_RESULTS)%.result,$(TEST_BUILD)%.out,$(RESULTS))
 
-.PHONY: test run-tests clean-tests print_tcsrc
-
 run-tests: $(TEST_BUILD_PATHS) $(TEST_EXECS) $(RESULTS)
 	@echo
 	@echo "----- SUMMARY -----"
@@ -376,5 +390,7 @@ print_tcsrc:
 	echo $(TEST_CSRC)
 
 #
-#
+# End of Unit Testing with Unity rules
 ##############################################################################
+
+.PHONY: test run-tests clean-tests print_tcsrc sign

@@ -56,7 +56,7 @@ Data field structure:
 =============== ========== ================ =====
  Number of IDs   ID 0 len   ID 0             ...
 =============== ========== ================ =====
- 1 byte          1 byte     ID 0 len bytes   ...
+ 1 byte          1 byte     10 bytes         ...
 =============== ========== ================ =====
 
 ```
@@ -66,7 +66,7 @@ Where
   - Number of IDs (n) is the number of IDs obtained from the user and carried by this CRPM.
   - This will be followed by n IDs of the following format:
       + ID n len (x) length of the n-th ID
-      + ID n - n-th ID
+      + ID n - n-th ID. Length of this field is fixed to 10 bytes, however only x bytes are used.
 
 Data field must not exceed ('maximum CRPM size' - 2)
 
