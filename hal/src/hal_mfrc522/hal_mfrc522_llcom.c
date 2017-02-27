@@ -1,7 +1,7 @@
 /**
  * @file    hal_mfrc522_llcom.c
  * @brief   Low-level communication functions
- * @detial	This file defines the functions for the low-level communication
+ * @detail	This file defines the functions for the low-level communication
  *          (reading and writing the registers) with the MFRC522 over
  *          various interfaces.
  *

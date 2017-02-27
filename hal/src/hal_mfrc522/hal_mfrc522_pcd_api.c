@@ -1,7 +1,7 @@
 /**
  * @file    hal_mfrc522_pcd_api.c
  * @brief   Implementation of the PCD API
- * @detial	This file implements functions defined in the
+ * @detail	This file implements functions defined in the
  *          hal_abstract_iso14443_pcd.h (definition of the abstract PCD API)
  *          for the MFRC522.
  */

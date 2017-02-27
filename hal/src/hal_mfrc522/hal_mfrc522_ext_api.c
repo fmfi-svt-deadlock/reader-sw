@@ -1,7 +1,7 @@
 /**
  * @file    hal_mfrc522_ext_api.c
  * @brief   Implementation of the Extended PCD Features
- * @detial	This file implements extended non-standard features of the MFRC522
+ * @detail	This file implements extended non-standard features of the MFRC522
  * 			module.
  */
 
