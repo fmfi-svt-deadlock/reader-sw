@@ -4,7 +4,11 @@
 #include "board_devices.h"
 #include "main.h"
 
+<<<<<<< HEAD
 static THD_WORKING_AREA(init_thread_wa, 512);
+=======
+static THD_WORKING_AREA(init_thread_wa, 1024);
+>>>>>>> 6b9606b... [docs] Describe the Reader <-> Controller protocol
 static THD_FUNCTION(init_thread, p) {
     (void)p;
 
@@ -16,11 +20,27 @@ static THD_FUNCTION(init_thread, p) {
     pcdresult_t result_r;
     result_r = pcdActivateRFAB(PCD);
 
+<<<<<<< HEAD
     iso14443result_t result_p;
     Picc cards[10];
     bool is_that_all;
     result_p = iso14443FindCards(PCD, cards, 10, &is_that_all);
 
+=======
+    while(true) {
+        Picc cards[10];
+        bool is_that_all;
+        unsigned int n_found_cards = iso14443FindCards(PCD, cards, 10, &is_that_all);
+
+        if (n_found_cards > 0) {
+            palSetPad(GPIOB, GPIOB_LED_G1);
+        } else {
+            palClearPad(GPIOB, GPIOB_LED_G1);
+        }
+    }
+
+    uint8_t x = 0;
+>>>>>>> 6b9606b... [docs] Describe the Reader <-> Controller protocol
     // result = pcdTransceiveShortFrameA(PCD, 0x26, &resp_len, 100000);
     // uint8_t anticoll[] = {0x93, 0x20};
     // result = pcdTransceiveAnticollFrameA(PCD, anticoll, 2, 0, 0, &resp_len, 100000);
