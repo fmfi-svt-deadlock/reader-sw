@@ -1,12 +1,14 @@
-dist: trusty
 sudo: required
+services:
+    - docker
 before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y gcc-arm-none-eabi binutils-arm-none-eabi doxygen graphviz
-install:
-  - cd docs && virtualenv _venv && source _venv/bin/activate && pip install -r requirements.txt && cd ..
+    - docker pull projectdeadlock/embedded-fw-builder
 script:
-  - make clean && make
-  - cd docs && make html && cd ..
-  - make test
-  - make clean && DEBUG_BUILD=no make
+    - docker run -t -v `pwd`:/srv -u `id -u` projectdeadlock/embedded-fw-builder sh -c "cd /srv && make clean && make"
+    - docker run -t -v `pwd`:/srv -u `id -u` projectdeadlock/embedded-fw-builder sh -c "cd /srv/docs
+                                                                                        && python -m venv _venv
+                                                                                        && source _venv/bin/activate
+                                                                                        && pip install -r requirements.txt
+                                                                                        && make html"
+    - docker run -t -v `pwd`:/srv -u `id -u` projectdeadlock/embedded-fw-builder sh -c "cd /srv && make test"
+    - docker run -t -v `pwd`:/srv -u `id -u` projectdeadlock/embedded-fw-builder sh -c "cd /srv && make clean && DEBUG_BUILD=no make"

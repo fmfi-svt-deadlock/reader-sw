@@ -17,7 +17,8 @@ If you want to build the documentation for yourself install doxygen and then go 
 
 ```bash
 # Create a new virtualenv
-virtualenv _venv
+python3 -m venv _venv
+source _venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 # Build the docs
@@ -40,16 +41,23 @@ Then build documentation as described in `doc/hal/readme.txt`.
 
 This firmware is based on the ChibiOS (http://www.chibios.org/).
 
-To compile this firmware:
+To compile this firmware without docker:
   - Install the appropriate arm toolchain, see ChibiOS documentaion for the
     list of supported compilers.
     - This project is tested on the GNU Compiler Collection `arm-none-eabi-` toolchain (ARM EABI, bare-metal). If you choose this toolchain, you will need:
-      - `arm-none-eabi-gcc` (tested on gcc version 5.3.0 (Arch Repository))
-      - `arm-none-eabi-binutils` (tested on 2.25.1)
-      - `arm-none-eabi-newlib` (tested on 2.3.0.20160104)
+      - `arm-none-eabi-gcc` (tested on gcc version 7.3.0 (Arch Repository))
+      - `arm-none-eabi-binutils` (tested on 2.30)
+      - `arm-none-eabi-newlib` (tested on 3.0.0)
   - Edit the `Makefile`:
-    - set `BOARD = ` variable to the name of the board you want to compile this firmware for.
+    - set `BOARD_FOLDER = ` variable to the name of the board you want to compile this firmware for.
   - `make` the project.
+
+Alternatively you can use Docker image `projectdeadlock/embedded-fw-builder:latest` (available in
+Docker Hub) which provides everything needed to build this fw. Example invocation:
+
+```
+docker run -t -v `pwd`:/srv -u `id -u` sh -c "cd /srv && make clean && make"
+```
 
 ## Flashing the firmware
 
