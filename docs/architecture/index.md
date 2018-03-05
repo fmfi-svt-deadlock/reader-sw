@@ -20,6 +20,7 @@ There are multiple ways to write a firmware for embedded devices, from a simple 
 modular but complex microkernel-like designs. Each design method provides a different mix of
 implementation cost, maintainability, stability and extensibility.
 
+
 Components and their interaction
 --------------------------------
 
@@ -40,23 +41,6 @@ receive a data structure describing message the Master Task wishes to send. The 
 even request sending a message if another message is being sent just now. Most fitting communication
 mechanism for this particular task is the Mailbox construct.
 
-### RFID Card Task
-
-This task is responsible for polling for RFID Cards. When it finds a card, it sends a message to
-the Master Task with info about the card it found.
-
-### Communication Receiver Task and Communication Transmitter Task
-
-These tasks are responsible for constructing and transmitting (resp. receiving and deconstructing)
-messages according to the Reader<->Controller communication protocol and keeping the link open.
-
-### User Interface Task
-
-This task is responsible for updating the user interface of the Reader.
-
-### Master Task
-
-This task orchestrates all other tasks.
 
 Watchdog
 --------
@@ -94,3 +78,14 @@ Then, when the Master Task itself generates a Heartbeat, it checks the Heartbeat
 all bits are set, it resets the Watchdog, and clears all bits in the Heartbeat Vector. Therefore if
 some tasks continually misses its Heartbeats, its bit won't ever be set and the Watchdog won't be
 reset.
+
+
+Detailed descriptions
+---------------------
+
+```eval_rst
+.. toctree::
+    :maxdepth: 2
+
+    tasks/task
+```
