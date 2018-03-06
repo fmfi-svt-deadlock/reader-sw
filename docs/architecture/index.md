@@ -88,4 +88,5 @@ Detailed descriptions
     :maxdepth: 2
 
     tasks/task
+    tasks/ui-task
 ```
