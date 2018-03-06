@@ -103,14 +103,14 @@ void dlTaskUiInit(uint8_t task_id, dl_task_ui_callbacks *callbacks);
  *
  * This function starts the task thread.
  */
-void dlTaskUiStart();
+void dlTaskUiStart(void);
 
 /**
  * @brief       Task stopper
  *
  * This function stops the task thread.
  */
-void dlTaskUiStop();
+void dlTaskUiStop(void);
 
 /*===========================================================================*/
 /* Task-specific API                                                         */
