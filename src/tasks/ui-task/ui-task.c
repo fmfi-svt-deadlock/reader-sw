@@ -40,13 +40,13 @@ typedef struct {
 /*== UI States and Flashes ===================================================*/
 
 /* 880Hz beep for 1s, no change in LEDs */
-internal_ui_seq_element ui_flash_read_ok[] = {
+static const internal_ui_seq_element ui_flash_read_ok[] = {
     {{1136, LED_ACTION_NOCHANGE}, 10},
     END_OF_SEQUENCE
 };
 
 /* 3 220Hz beeps for 100ms with blinking red LED */
-internal_ui_seq_element ui_flash_read_fail[] = {
+static const internal_ui_seq_element ui_flash_read_fail[] = {
     {{0,    (LED_ACTION_CLEAR << LED_SHIFT_LOCK_R)}, 1},
     {{4545, (LED_ACTION_SET   << LED_SHIFT_LOCK_R)}, 1},
     {{0,    (LED_ACTION_CLEAR << LED_SHIFT_LOCK_R)}, 1},
@@ -54,6 +54,22 @@ internal_ui_seq_element ui_flash_read_fail[] = {
     {{0,    (LED_ACTION_CLEAR << LED_SHIFT_LOCK_R)}, 1},
     {{4545, (LED_ACTION_SET   << LED_SHIFT_LOCK_R)}, 1},
     {{0,    (LED_ACTION_CLEAR << LED_SHIFT_LOCK_R)}, 1},
+    END_OF_SEQUENCE
+};
+
+static const internal_ui_seq_element ui_state_error[] = {
+    {{0, (LED_ACTION_SET   << LED_SHIFT_STATUS_R)}, 1},
+    {{0, (LED_ACTION_CLEAR << LED_SHIFT_STATUS_R)}, 1},
+    END_OF_SEQUENCE
+};
+
+static const internal_ui_seq_element ui_state_locked[] = {
+    {{0, (LED_ACTION_SET << LED_SHIFT_STATUS_G) | (LED_ACTION_SET << LED_SHIFT_LOCK_R)}, 1},
+    END_OF_SEQUENCE
+};
+
+static const internal_ui_seq_element ui_state_unlocked[] = {
+    {{0, (LED_ACTION_SET << LED_SHIFT_STATUS_G) | (LED_ACTION_SET << LED_SHIFT_LOCK_G)}, 1},
     END_OF_SEQUENCE
 };
 
@@ -139,10 +155,10 @@ static void set_int_ui_state(internal_ui_state state) {
         gptStopTimer(&GPTD14);
     }
 
-    perform_led_action(LINE_LED_STATUS_R, ((state.leds >> LED_SHIFT_STATUS_R) & 0xFF));
-    perform_led_action(LINE_LED_STATUS_G, ((state.leds >> LED_SHIFT_STATUS_G) & 0xFF));
-    perform_led_action(LINE_LED_LOCK_R, ((state.leds >> LED_SHIFT_LOCK_R) & 0xFF));
-    perform_led_action(LINE_LED_LOCK_G, ((state.leds >> LED_SHIFT_LOCK_G) & 0xFF));
+    perform_led_action(LINE_LED_STATUS_R, ((state.leds >> LED_SHIFT_STATUS_R) & 0x3));
+    perform_led_action(LINE_LED_STATUS_G, ((state.leds >> LED_SHIFT_STATUS_G) & 0x3));
+    perform_led_action(LINE_LED_LOCK_R, ((state.leds >> LED_SHIFT_LOCK_R) & 0x3));
+    perform_led_action(LINE_LED_LOCK_G, ((state.leds >> LED_SHIFT_LOCK_G) & 0x3));
 }
 
 
@@ -159,73 +175,81 @@ static void clear_int_ui_state(void) {
 
 static THD_FUNCTION(uiTask, arg) {
     (void) arg;
-    
-    dl_task_ui_state         state = DL_TASK_UI_STATE_ERROR;
-    msg_t                    msg;
-    msg_t                    fetch_status;
-    internal_ui_seq_element  *current_seq = NULL;
-    uint8_t                  current_seq_position = 0;
-    uint8_t                  current_element_duration = 0;
+
+    msg_t                          msg;
+    msg_t                          fetch_status;
+    const internal_ui_seq_element  *flash_seq = NULL;
+    const internal_ui_seq_element  *pers_seq = ui_state_error;
+    uint8_t                        flash_seq_position = 0;
+    uint8_t                        flash_element_duration = 0;
+    uint8_t                        pers_seq_position = 0;
+    uint8_t                        pers_element_duration = 0;
 
     gptStart(&GPTD14, &timer_config);
 
     while (!chThdShouldTerminateX()) {
         fetch_status = chMBFetch(&inbox, &msg, OSAL_MS2ST(100));
         if (fetch_status == MSG_OK) {
-            current_seq = NULL;
-            current_seq_position = 0;
-            current_element_duration = 0;
+            flash_seq = NULL;
+            flash_seq_position = 0;
+            flash_element_duration = 0;
+            pers_seq_position = 0;
+            pers_element_duration = 0;
 
             if (UNPACK_TYPE(msg) == MSG_SET_STATE) {
-                state = UNPACK_PAYLOAD(msg);
-                // Clear previous LED states
-                palClearLine(LINE_LED_STATUS_R);
-                palClearLine(LINE_LED_STATUS_G);
-                palClearLine(LINE_LED_LOCK_R);
-                palClearLine(LINE_LED_LOCK_G);
-                // Clear previous flash sequence
+                switch(UNPACK_PAYLOAD(msg)) {
+                    case DL_TASK_UI_STATE_ERROR:
+                        pers_seq = ui_state_error;
+                        break;
+                    case DL_TASK_UI_STATE_LOCKED:
+                        pers_seq = ui_state_locked;
+                        break;
+                    case DL_TASK_UI_STATE_UNLOCKED:
+                        pers_seq = ui_state_unlocked;
+                        break;
+                }
+                clear_int_ui_state();
             } else if (UNPACK_TYPE(msg) == MSG_FLASH) {
                 switch(UNPACK_PAYLOAD(msg)) {
                     case DL_TASK_UI_FLASH_READ_OK:
-                        current_seq = ui_flash_read_ok;
+                        flash_seq = ui_flash_read_ok;
                         break;
                     case DL_TASK_UI_FLASH_READ_BAD:
-                        current_seq = ui_flash_read_fail;
+                        flash_seq = ui_flash_read_fail;
                         break;
                 }
             }
         }
 
-        if (current_seq != NULL) {
-            if ((current_seq[current_seq_position].duration != 0) &&
-                (current_seq[current_seq_position].duration == current_element_duration)) {
-                    current_element_duration = 0;
-                    current_seq_position++;
-                }
-            if (current_seq[current_seq_position].duration == 0) {
-                current_seq = NULL;
+        if (flash_seq != NULL) {
+            if ((flash_seq[flash_seq_position].duration != 0) &&
+                (flash_seq[flash_seq_position].duration == flash_element_duration)) {
+                    flash_element_duration = 0;
+                    flash_seq_position++;
+            }
+            if (flash_seq[flash_seq_position].duration == 0) {
+                flash_seq = NULL;
+                clear_int_ui_state();
             } else {
-                set_int_ui_state(current_seq[current_seq_position].state);
-                current_element_duration++;
+                set_int_ui_state(flash_seq[flash_seq_position].state);
+                flash_element_duration++;
             }
         }
 
-        if (current_seq == NULL) {
-            clear_int_ui_state();
-            switch(state) {
-                case DL_TASK_UI_STATE_ERROR:
-                    palToggleLine(LINE_LED_STATUS_R);
-                    break;
-                case DL_TASK_UI_STATE_LOCKED:
-                    palSetLine(LINE_LED_STATUS_G);
-                    palSetLine(LINE_LED_LOCK_R);
-                    break;
-                case DL_TASK_UI_STATE_UNLOCKED:
-                    palSetLine(LINE_LED_STATUS_G);
-                    palSetLine(LINE_LED_LOCK_G);
-                    break;
+        if (flash_seq == NULL) {
+            if ((pers_seq[pers_seq_position].duration != 0) &&
+                (pers_seq[pers_seq_position].duration == pers_element_duration)) {
+                    pers_element_duration = 0;
+                    pers_seq_position++;
             }
+            if (pers_seq[pers_seq_position].duration == 0) {
+                pers_seq_position = 0;
+            }
+            set_int_ui_state(pers_seq[pers_seq_position].state);
+            pers_element_duration++;
         }
+
+        //TODO invoke heartbeat here!
     }
 }
 
