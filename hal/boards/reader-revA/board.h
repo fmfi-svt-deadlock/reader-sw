@@ -116,6 +116,7 @@
 #define LINE_LED_LOCK_R             PAL_LINE(GPIOA, GPIOA_LED_R2)
 #define LINE_LED_STATUS_G           PAL_LINE(GPIOB, GPIOB_LED_G1)
 #define LINE_LED_STATUS_R           PAL_LINE(GPIOB, GPIOB_LED_R1)
+#define LINE_AUDIO_OUT              PAL_LINE(GPIOA, GPIOA_AUDIO_OUT)
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
@@ -154,7 +155,7 @@
                                      PIN_MODE_OUTPUT(GPIOA_RFID_SS) |       \
                                      PIN_MODE_ANALOG(GPIOA_V_SENSE) |       \
                                      PIN_MODE_OUTPUT(GPIOA_RFID_RST) |      \
-                                     PIN_MODE_ANALOG(GPIOA_AUDIO_OUT) |     \
+                                     PIN_MODE_OUTPUT(GPIOA_AUDIO_OUT) |     \
                                      PIN_MODE_ALTERNATE(GPIOA_RFID_SCK) |   \
                                      PIN_MODE_ALTERNATE(GPIOA_RFID_MISO) |  \
                                      PIN_MODE_ALTERNATE(GPIOA_RFID_MOSI) |  \
