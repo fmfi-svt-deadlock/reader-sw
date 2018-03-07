@@ -4,6 +4,8 @@
 #include "board_devices.h"
 #include "main.h"
 
+#include "tasks/ui-task/ui-task.h"
+
 
 int main(void) {
 
@@ -18,6 +20,9 @@ int main(void) {
     halInit();
     halCustomInit();
     chSysInit();
+
+    dlTaskUiInit(0, NULL);
+    dlTaskUiStart();
 
     /*
      * Idle thread loop
