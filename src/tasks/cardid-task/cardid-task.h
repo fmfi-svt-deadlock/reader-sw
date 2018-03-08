@@ -60,6 +60,14 @@ typedef struct {
      * @param[in]   len     Length of the array of detected cards
      */
     void (*card_detected)(dl_task_cardid_card *cards, uint8_t len);
+
+    /**
+     * @brief   RFID Reader Module error
+     *
+     * The reader module has experienced an unrecoverable error and can't function. The task will
+     * automatically stop polling for cards.
+     */
+    void (*reader_error)(void);
 } dl_task_cardid_callbacks;
 
 

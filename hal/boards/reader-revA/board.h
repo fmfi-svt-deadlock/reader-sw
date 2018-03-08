@@ -289,6 +289,8 @@ extern "C" {
 #endif
   void boardInit(void);
   void devicesInit(void);
+
+  void resetRFIDModule(void);
 #ifdef __cplusplus
 }
 #endif

@@ -179,3 +179,11 @@ void devicesInit(void) {
     mfrc522ObjectInitSPI(&MFRC522, &SPI_MFRC522);
     mfrc522Start(&MFRC522, &mfrc522_config);
 }
+
+/**
+ * @brief       Resets the MFRC522 module
+ */
+void resetRFIDModule(void) {
+    mfrc522Stop(&MFRC522);
+    mfrc522Start(&MFRC522, &mfrc522_config);
+}
