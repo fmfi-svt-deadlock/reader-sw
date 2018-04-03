@@ -21,13 +21,15 @@
 /* Task data structures and constants                                        */
 /*===========================================================================*/
 
+#define MAX_CARDS_PER_POLL_CYCLE    10
+
 /**
  * @brief       Card ID structure
  *
  * This structure carries the Card ID and information about how long the ID is.
  */
 typedef struct {
-    uint8_t     uid[10];
+    uint8_t     uid[MAX_PICC_UID_SIZE];
     PiccUidLen  uid_len;
 } dl_task_cardid_card;
 

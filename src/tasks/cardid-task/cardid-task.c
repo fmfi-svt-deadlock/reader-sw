@@ -88,9 +88,9 @@ static THD_FUNCTION(cardIDTask, arg) {
 
         if (pollThisCycle) {
             unsigned int result_p = 0;
-            Picc cards[10];
+            Picc cards[MAX_CARDS_PER_POLL_CYCLE];
             bool is_that_all;
-            result_p = iso14443FindCards(PCD, cards, 10, &is_that_all);
+            result_p = iso14443FindCards(PCD, cards, MAX_CARDS_PER_POLL_CYCLE, &is_that_all);
 
             if (result_p > 0) {
                 chMtxLock(&pollMutex);
@@ -98,7 +98,7 @@ static THD_FUNCTION(cardIDTask, arg) {
                 if (poll) {
                     dl_task_cardid_card sanitized_cards[result_p];
                     for (unsigned int i = 0; i < result_p; i++) {
-                        memcpy(sanitized_cards[i].uid, cards[i].uid, 10);
+                        memcpy(sanitized_cards[i].uid, cards[i].uid, MAX_PICC_UID_SIZE);
                         sanitized_cards[i].uid_len = cards[i].uid_len;
                     }
                     callbacks->card_detected(sanitized_cards, result_p);
