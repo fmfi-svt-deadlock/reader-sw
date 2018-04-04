@@ -28,10 +28,12 @@ typedef enum {
 } iso14443result_t;
 
 typedef enum {
-    PICC_UID_4,
-    PICC_UID_7,
-    PICC_UID_10
+    PICC_UID_4  = 4,
+    PICC_UID_7  = 7,
+    PICC_UID_10 = 10
 } PiccUidLen;
+
+#define MAX_PICC_UID_SIZE	PICC_UID_10
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -46,7 +48,7 @@ typedef enum {
 /*===========================================================================*/
 
 typedef struct {
-    uint8_t     uid[10];
+    uint8_t     uid[MAX_PICC_UID_SIZE];
     PiccUidLen  uid_len;
     bool        iso_compliant;
 	CRCard      crcard;
