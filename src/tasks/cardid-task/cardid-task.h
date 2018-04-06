@@ -17,21 +17,11 @@
 #ifndef TASKS__CARDID_TASK_H
 #define TASKS__CARDID_TASK_H
 
+#include "common.h"
+
 /*===========================================================================*/
 /* Task data structures and constants                                        */
 /*===========================================================================*/
-
-#define MAX_CARDS_PER_POLL_CYCLE    10
-
-/**
- * @brief       Card ID structure
- *
- * This structure carries the Card ID and information about how long the ID is.
- */
-typedef struct {
-    uint8_t     uid[MAX_PICC_UID_SIZE];
-    PiccUidLen  uid_len;
-} dl_task_cardid_card;
 
 /**
  * @brief       A structure of Master Task callbacks
@@ -61,7 +51,7 @@ typedef struct {
      * @param[in]   cards   An array of IDs of detected cards
      * @param[in]   len     Length of the array of detected cards
      */
-    void (*card_detected)(dl_task_cardid_card *cards, uint8_t len);
+    void (*card_detected)(dl_picc_uid *cards, uint8_t len);
 
     /**
      * @brief   RFID Reader Module error
