@@ -10,9 +10,9 @@ endif
 # Compiler options here.
 ifeq ($(USE_OPT),)
   ifeq ($(DEBUG_BUILD),yes)
-  	USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16
+  	USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -DUSE_CBOR_CONTEXT -DCBOR_ALIGN_READS -DCBOR_NO_STDLIB_REFERENCES
   else
-  	USE_OPT = -O2 -fomit-frame-pointer -falign-functions=16
+  	USE_OPT = -O2 -fomit-frame-pointer -falign-functions=16 -DUSE_CBOR_CONTEXT -DCBOR_ALIGN_READS -DCBOR_NO_STDLIB_REFERENCES
   endif
 endif
 
@@ -110,6 +110,9 @@ PROJECT = deadlock-reader
 CHIBIOS = deps/ChibiOS
 UNITY = deps/Unity/src/
 FFF   = deps/fff/
+DEADCOM_DCL2 = deps/libdeadcom/dcl2/lib/
+DEADCOM_DCRCP = deps/libdeadcom/dcrcp/lib/
+DEADCOM_CNCBOR = deps/libdeadcom/deps/cn-cbor/
 CUSTOM_HAL = hal/
 
 TEST_PATH = test/
@@ -146,8 +149,10 @@ CSRC = $(STARTUPSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-	   $(shell find $(SOURCES_ROOT) -type f -name '*.c') \
-       $(TESTSRC)
+	   $(shell find $(DEADCOM_DCL2)/src -type f -name '*.c') \
+	   $(shell find $(DEADCOM_DCRCP)/src -type f -name '*.c') \
+	   $(shell find $(DEADCOM_CNCBOR)/src -type f -name '*.c') \
+	   $(shell find $(SOURCES_ROOT) -type f -name '*.c')
 
 # C test sources.
 TEST_CSRC = $(shell find $(TEST_PATH) -type f -regextype sed -regex '.*-test[0-9]*\.c')
@@ -180,7 +185,8 @@ TCPPSRC =
 ASMSRC =
 ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
-INCDIR = $(CHIBIOS)/os/license \
+INCDIR = include-overrides \
+		 $(CHIBIOS)/os/license \
          $(STARTUPINC) \
 		 $(KERNINC) \
 		 $(PORTINC) \
@@ -190,6 +196,9 @@ INCDIR = $(CHIBIOS)/os/license \
 		 $(BOARDINC) \
 		 $(TESTINC) \
          $(CHIBIOS)/os/various \
+		 $(DEADCOM_DCL2)/inc \
+		 $(DEADCOM_DCRCP)/inc \
+		 $(DEADCOM_CNCBOR)/include \
 		 $(SOURCES_ROOT) \
 		 $(SOURCES_ROOT)/conf
 
