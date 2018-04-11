@@ -7,3 +7,6 @@
 [submodule "deps/fff"]
 	path = deps/fff
 	url = https://github.com/meekrosoft/fff.git
+[submodule "deps/libdeadcom"]
+	path = deps/libdeadcom
+	url = https://github.com/fmfi-svt-deadlock/libdeadcom.git
