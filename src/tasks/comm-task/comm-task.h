@@ -113,6 +113,6 @@ void dlTaskCommSendRdrFailure(char *str);
 /**
  * @brief  Send Auth method: PICC UID obtained CRPM
  */
-void dlTaskCommSendAM0GotUuids(dl_picc_uid *uuids, size_t uuids_len);
+void dlTaskCommSendAM0GotUids(dl_picc_uid *uids, size_t uids_len);
 
 #endif
