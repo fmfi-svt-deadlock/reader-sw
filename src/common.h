@@ -9,6 +9,9 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#include "hal.h"
+#include "hal_custom.h"
+
 #define DL_MAX_CARDS_PER_POLL_CYCLE    10
 
 /**

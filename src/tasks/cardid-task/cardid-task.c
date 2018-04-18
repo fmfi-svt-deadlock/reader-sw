@@ -1,5 +1,5 @@
 /**
- * @file        src/tasks/cardid-task.c
+ * @file        src/tasks/cardid-task/cardid-task.c
  * @brief       Card ID Reader Task implementation
  */
 
