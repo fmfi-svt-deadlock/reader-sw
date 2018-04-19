@@ -90,4 +90,5 @@ Detailed descriptions
     tasks/task
     tasks/ui-task
     tasks/cardid-task
+    tasks/comm-task
 ```
