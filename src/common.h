@@ -12,7 +12,11 @@
 #include "hal.h"
 #include "hal_custom.h"
 
-#define DL_MAX_CARDS_PER_POLL_CYCLE    10
+#define READER_CLASS                    0
+#define READER_SW_VER_MAJOR             0
+#define READER_SW_VER_MINOR             1
+
+#define DL_MAX_CARDS_PER_POLL_CYCLE     10
 
 /**
  * @brief       Card ID structure

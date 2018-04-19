@@ -57,6 +57,8 @@
  */
 #define BOARD_SVT_DEADLOCK_READER_REVA
 #define BOARD_NAME                  "SVT Deadlock Reader revA"
+#define BOARD_HW_MODEL              1
+#define BOARD_HW_REV                1
 
 /*
  * Board oscillators-related settings.
