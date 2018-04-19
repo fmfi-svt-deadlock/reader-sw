@@ -88,6 +88,7 @@ Detailed descriptions
     :maxdepth: 2
 
     tasks/task
+    tasks/master-task
     tasks/ui-task
     tasks/cardid-task
     tasks/comm-task
