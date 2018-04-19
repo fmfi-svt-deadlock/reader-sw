@@ -158,9 +158,10 @@ static THD_FUNCTION(commTaskControl, arg) {
             dcConnect(&dc_link);
         } else {
             DeadcomCRPM *m;
-            msg_t r = chMBFetch(&outbox, (msg_t*)&m, OSAL_MS2ST(10));
+            msg_t r = chMBFetch(&outbox, (msg_t*)&m, OSAL_MS2ST(100));
             if (r != MSG_OK) {
-                goto heartbeat;
+                // No regular message to transmit. Let's send heartbeat CRPM instead.
+                m->type = DCRCP_CRPM_HEARTBEAT;
             }
 
             uint8_t data[DEADCOM_PAYLOAD_MAX_LEN];
@@ -173,8 +174,6 @@ static THD_FUNCTION(commTaskControl, arg) {
             chGuardedPoolFree(&out_pool, m);
         }
 
-        heartbeat:
-        ;
         //TODO generate heartbeat
     }
 }
@@ -182,7 +181,7 @@ static THD_FUNCTION(commTaskControl, arg) {
 static THD_FUNCTION(commTaskReceiveHandler, arg) {
     (void) arg;
     while (!chThdShouldTerminateX()) {
-        msg_t r = sdGetTimeout(&SD2, OSAL_MS2ST(10));
+        msg_t r = sdGetTimeout(&SD2, OSAL_MS2ST(100));
         if (r != MSG_TIMEOUT && r != MSG_RESET) {
             uint8_t b[] = { (uint8_t)r };
             dcProcessData(&dc_link, b, 1);
