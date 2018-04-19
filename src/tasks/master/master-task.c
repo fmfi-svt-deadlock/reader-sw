@@ -6,6 +6,7 @@
 #include <string.h>
 #include "ch.h"
 #include "hal.h"
+#include "board_devices.h"
 
 #include "tasks/ui-task/ui-task.h"
 #include "tasks/cardid-task/cardid-task.h"
@@ -21,6 +22,7 @@
 #define TASK_ID_CARDID          1
 #define TASK_ID_COMM_CONTROL    2
 #define TASK_ID_COMM_RECV       3
+#define WATCHDOGED_TASKS        0xF // All 4 tasks
 
 #define INBOX_SIZE              10
 
@@ -108,6 +110,8 @@ static thread_t *master_task_thread;
 
 static master_task_state state = STATE_DISCONNECTED;
 
+volatile uint8_t heartbeat_vector;
+
 /*===========================================================================*/
 /* Master Task thread and internal functions                                 */
 /*===========================================================================*/
@@ -117,9 +121,9 @@ static THD_FUNCTION(masterTask, arg) {
 
     // Initialize board-level devices.
     devicesInit();
-    // TODO initialize watchdog
-    // TODO activate watchdog
     chThdSleepMilliseconds(1000);
+
+    wdgStart(&WDGD1, &wdgcfg);
 
     dlTaskUiStart();
     dlTaskCardIDStart();
@@ -128,7 +132,7 @@ static THD_FUNCTION(masterTask, arg) {
     while(true) {
         master_task_msg *msg = NULL;
         msg_t fetch_status = chMBFetch(&inbox, (msg_t*)&msg, OSAL_MS2ST(100));
-        if (fetch_status != MSG_OK) {continue;}
+        if (fetch_status != MSG_OK) {goto heartbeat;}
 
         if (state == STATE_DISCONNECTED) {
             if (msg->t == MT_MSG_LINK_CHANGE &&
@@ -202,6 +206,12 @@ static THD_FUNCTION(masterTask, arg) {
         }
 
         chGuardedPoolFree(&msg_pool, msg);
+
+        heartbeat:
+        if ((heartbeat_vector & WATCHDOGED_TASKS) == WATCHDOGED_TASKS) {
+            wdgReset(&WDGD1);
+            heartbeat_vector = 0;
+        }
     }
 }
 
@@ -211,7 +221,7 @@ static THD_FUNCTION(masterTask, arg) {
 /*===========================================================================*/
 
 void cb_task_heartbeat(uint8_t task_id) {
-    // TODO update the heartbeat vector
+    heartbeat_vector |= (1 << task_id);
 }
 
 void cb_task_cardid_cardDetected(dl_picc_uid *cards, uint8_t len) {
@@ -303,5 +313,5 @@ void dlTaskMasterInit(void) {
 
 void dlTaskMasterStart(void) {
     master_task_thread = chThdCreateStatic(masterTaskWA, sizeof(masterTaskWA),
-                                           NORMALPRIO, masterTask, NULL);
+                                           HIGHPRIO, masterTask, NULL);
 }

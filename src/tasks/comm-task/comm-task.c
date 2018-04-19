@@ -174,7 +174,7 @@ static THD_FUNCTION(commTaskControl, arg) {
             chGuardedPoolFree(&out_pool, m);
         }
 
-        //TODO generate heartbeat
+        callbacks->heartbeat(ctrl_task_id);
     }
 }
 
@@ -242,8 +242,7 @@ static THD_FUNCTION(commTaskReceiveHandler, arg) {
         }
 
         heartbeat:
-        ;
-        // TODO generate heartbeat
+        callbacks->heartbeat(rcv_task_id);
     }
 }
 

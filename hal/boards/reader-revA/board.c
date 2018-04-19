@@ -146,6 +146,15 @@ const Mfrc522Config mfrc522_config = {
 Mfrc522Driver MFRC522;
 Pcd *PCD = &(MFRC522.pcd);
 
+/*
+ * Watchdog deadline set to ~~500ms
+ */
+WDGConfig wdgcfg = {
+    STM32_IWDG_PR_16,
+    STM32_IWDG_RL(1250),
+    STM32_IWDG_WIN_DISABLED
+};
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup

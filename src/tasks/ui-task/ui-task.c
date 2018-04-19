@@ -249,7 +249,7 @@ static THD_FUNCTION(uiTask, arg) {
             pers_element_duration++;
         }
 
-        //TODO invoke heartbeat here!
+        callbacks->heartbeat(task_id);
     }
 }
 

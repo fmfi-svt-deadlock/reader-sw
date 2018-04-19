@@ -110,7 +110,7 @@ static THD_FUNCTION(cardIDTask, arg) {
             chThdSleepMilliseconds(100);
         }
 
-        //TODO generate heartbeat
+        callbacks->heartbeat(task_id);
     }
 
 }
