@@ -210,7 +210,7 @@ static THD_FUNCTION(commTaskReceiveHandler, arg) {
             }
             uint8_t buffer[received_msg];
             dcr = dcGetReceivedMsg(&dc_link, buffer, &received_msg);
-            if (dcr == DC_LINK_RESET) {
+            if (dcr == DC_NOT_CONNECTED) {
                 // Link dropped since we've last checked
                 last_link_state = DL_TASK_COMM_LINKDOWN;
                 callbacks->linkChange(last_link_state);
