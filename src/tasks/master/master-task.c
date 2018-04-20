@@ -77,6 +77,9 @@ void cb_task_comm_sysQueryRequest(void);
 void cb_task_comm_activateAuthMethods(DeadcomCRPMAuthMethod *methods, size_t methods_len);
 void cb_task_comm_uiUpdate(DeadcomCRPMUIClass0States uistate);
 
+// Dest should be at least 8 bytes long. No '\0' char will be added.
+void numToHex(uint32_t num, char *dest);
+
 /*===========================================================================*/
 /* Internal variables and constants                                          */
 /*===========================================================================*/
@@ -160,11 +163,17 @@ static THD_FUNCTION(masterTask, arg) {
                         state = STATE_DISCONNECTED;
                     }
                     break;
-                case MT_MSG_COMM_SYS_QUERY_REQ:
-                    dlTaskCommSendSysQueryResp(READER_CLASS, BOARD_HW_MODEL, BOARD_HW_REV,
-                                               "TODOgetrealserialnumber!!", READER_SW_VER_MAJOR,
-                                               READER_SW_VER_MINOR);
+                case MT_MSG_COMM_SYS_QUERY_REQ: {
+                    char sn[26] = {'\0'};
+                    uint32_t *uid = (uint32_t*)UID_BASE;
+                    numToHex(uid[0], sn);
+                    numToHex(uid[1], sn+8);
+                    numToHex(uid[2], sn+16);
+                    sn[24] = 'R'; // Filler constant
+                    dlTaskCommSendSysQueryResp(READER_CLASS, BOARD_HW_MODEL, BOARD_HW_REV, sn,
+                                               READER_SW_VER_MAJOR, READER_SW_VER_MINOR);
                     break;
+                }
                 case MT_MSG_COMM_ACTIVATE_AM0:
                     if (state == STATE_ACTIVE) {break;}
                     dlTaskCardIDStartPolling();
@@ -215,6 +224,14 @@ static THD_FUNCTION(masterTask, arg) {
     }
 }
 
+
+void numToHex(uint32_t num, char *dest) {
+    for (uint8_t i = 0; i < sizeof(num)*2; i++) {
+        *dest = "0123456789ABCDEF"[num & 0xF];
+        num >>= 4;
+        dest++;
+    }
+}
 
 /*===========================================================================*/
 /* Task callbacks implementation                                             */
