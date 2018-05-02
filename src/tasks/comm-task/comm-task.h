@@ -103,7 +103,8 @@ void dlTaskCommStop(void);
  * @brief  Send System Query Response CRPM
  */
 void dlTaskCommSendSysQueryResp(uint16_t rdrClass, uint16_t hwModel, uint16_t hwRev,
-                                char serial[25], uint8_t swVerMajor, uint8_t swVerMinor);
+                                char serial[DCRCP_SERIAL_MAX_LEN], uint8_t swVerMajor,
+                                uint8_t swVerMinor);
 
 /**
  * @brief  Send Reader Failure CRPM

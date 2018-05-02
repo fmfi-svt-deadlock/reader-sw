@@ -98,7 +98,8 @@ volatile dl_task_comm_linkstate last_link_state = DL_TASK_COMM_LINKDOWN;
 /*===========================================================================*/
 
 void dlTaskCommSendSysQueryResp(uint16_t rdrClass, uint16_t hwModel, uint16_t hwRev,
-                                char serial[25], uint8_t swVerMajor, uint8_t swVerMinor) {
+                                char serial[DCRCP_SERIAL_MAX_LEN], uint8_t swVerMajor,
+                                uint8_t swVerMinor) {
     DeadcomCRPM *m = chGuardedPoolAllocTimeout(&out_pool, TIME_INFINITE);
     if (m == NULL) {
         chSysHalt("null from inifinitely waiting guarded pool");
@@ -111,7 +112,7 @@ void dlTaskCommSendSysQueryResp(uint16_t rdrClass, uint16_t hwModel, uint16_t hw
     m->data.sysQueryResponse.hwRev      = hwRev;
     m->data.sysQueryResponse.swVerMajor = swVerMajor;
     m->data.sysQueryResponse.swVerMinor = swVerMinor;
-    memcpy(&(m->data.sysQueryResponse.serial), serial, 25); // TODO define 25 as constant somewhere
+    memcpy(&(m->data.sysQueryResponse.serial), serial, DCRCP_SERIAL_MAX_LEN);
     (void)chMBPost(&outbox, (msg_t)m, TIME_INFINITE);
 }
 
@@ -123,8 +124,7 @@ void dlTaskCommSendRdrFailure(char *str) {
     }
     memset(m, 0, sizeof(DeadcomCRPM));
     m->type = DCRCP_CRPM_RDR_FAILURE;
-    // TODO 200 should not be hardcoded here
-    strncpy(m->data.rdrFailure, str, 200);
+    strncpy(m->data.rdrFailure, str, DCRCP_RDR_FAILURE_MSG_MAX_LEN);
     (void)chMBPost(&outbox, (msg_t)m, TIME_INFINITE);
 }
 
