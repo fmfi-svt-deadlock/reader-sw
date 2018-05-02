@@ -40,7 +40,7 @@ static bool dclCondSignal(dl_task_comm_tvars_t *tvars);
 /* Internal variables and constants                                          */
 /*===========================================================================*/
 
-#define THREAD_WORKING_AREA_SIZE_MASTER 1024
+#define THREAD_WORKING_AREA_SIZE_MASTER 2048
 #define THREAD_WORKING_AREA_SIZE_RECEIVE_HANDLER 2048
 
 #define OUT_QUEUE_LENGTH 5
@@ -180,6 +180,7 @@ static THD_FUNCTION(commTaskControl, arg) {
 
 static THD_FUNCTION(commTaskReceiveHandler, arg) {
     (void) arg;
+
     while (!chThdShouldTerminateX()) {
         msg_t r = sdGetTimeout(&SD2, OSAL_MS2ST(100));
         if (r != MSG_TIMEOUT && r != MSG_RESET) {
@@ -251,9 +252,19 @@ static THD_FUNCTION(commTaskReceiveHandler, arg) {
 
 static bool dclTransmitBytes(const uint8_t *buf, size_t buf_size, void* context) {
     (void)context;
+    event_listener_t tx_complete_listener;
+    chEvtRegisterMaskWithFlags(chnGetEventSource(&SD2), &tx_complete_listener,
+                               EVENT_MASK(0), CHN_TRANSMISSION_END);
+    chEvtGetAndClearFlags(&tx_complete_listener);
     sdWrite(&SD2, buf, buf_size);
-    // TODO wait until the message is fully transmitted
-    return true;
+    while(true) {
+        chEvtWaitOne(EVENT_MASK(0));
+        eventflags_t f = chEvtGetAndClearFlags(&tx_complete_listener);
+        if (f & CHN_TRANSMISSION_END) {
+            chEvtUnregister(chnGetEventSource(&SD2), &tx_complete_listener);
+            return true;
+        }
+    }
 }
 
 static bool dclMtxObjectInit(dl_task_comm_tvars_t *tvars) {
