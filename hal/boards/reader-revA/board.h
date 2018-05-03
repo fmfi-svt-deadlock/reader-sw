@@ -117,6 +117,8 @@
 #define LINE_LED_STATUS_G           PAL_LINE(GPIOB, GPIOB_LED_G1)
 #define LINE_LED_STATUS_R           PAL_LINE(GPIOB, GPIOB_LED_R1)
 #define LINE_AUDIO_OUT              PAL_LINE(GPIOA, GPIOA_AUDIO_OUT)
+#define LINE_RDR_TXD                PAL_LINE(GPIOA, GPIOA_RDR_TXD)
+#define LINE_RDR_RXD                PAL_LINE(GPIOA, GPIOA_RDR_RXD)
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
@@ -193,10 +195,11 @@
                                      PIN_AFIO_AF(GPIOA_RFID_MISO, 0) |      \
                                      PIN_AFIO_AF(GPIOA_RFID_MOSI, 0))
 
-// TODO incorrect setting so that SWDIO works!
+// SWDIO and GPIOA_RDR_TXD are the same pin. Alternate function set to 0 so that SWDIO has
+// priority. Communication task will switch to the correct alternate mode when necessarry
 #define VAL_GPIOA_AFRH              (AFIO_DEFAULT_0 |                         \
                                      PIN_AFIO_AF(GPIOA_RDR_TXD, 0) |          \
-                                     PIN_AFIO_AF(GPIOA_RDR_RXD, 0))
+                                     PIN_AFIO_AF(GPIOA_RDR_RXD, 1))
 
 /*
  * GPIOB setup
@@ -254,6 +257,22 @@
 #define VAL_GPIOF_ODR               (ODR_DEFAULT_LOW)
 #define VAL_GPIOF_AFRL              (AFIO_DEFAULT_0)
 #define VAL_GPIOF_AFRH              (AFIO_DEFAULT_0)
+
+/*
+ * SERIAL setup
+ */
+#define SD2_CONFIG                  {/* speed: 38400 bauds */               \
+                                     38400,                                 \
+                                                                            \
+                                     /* cr1: 8 bits, 1 even parity */       \
+                                     USART_CR1_M0 | USART_CR1_PCE,          \
+                                                                            \
+                                     /* cr2 */                              \
+                                     0,                                     \
+                                                                            \
+                                     /* cr3 */                              \
+                                     0                                      \
+                                     }
 
 /*
  * SPI setup
