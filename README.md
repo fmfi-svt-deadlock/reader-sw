@@ -1,3 +1,7 @@
+# PROJECT MOVED
+
+This repository is now hosted here: https://gitlab.com/project-deadlock/reader/rdr-fw-type0-chibaite
+
 # Reader firmware
 
 Firmware for the Reader component of project Deadlock. For the project overview, and more information about what the reader does and what communication protocols it utilizes see https://github.com/fmfi-svt-deadlock/server/wiki.
