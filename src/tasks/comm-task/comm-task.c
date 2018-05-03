@@ -102,7 +102,7 @@ void dlTaskCommSendSysQueryResp(uint16_t rdrClass, uint16_t hwModel, uint16_t hw
                                 uint8_t swVerMinor) {
     DeadcomCRPM *m = chGuardedPoolAllocTimeout(&out_pool, TIME_INFINITE);
     if (m == NULL) {
-        chSysHalt("null from inifinitely waiting guarded pool");
+        chSysHalt("null from infinitely waiting guarded pool");
         return;
     }
     memset(m, 0, sizeof(DeadcomCRPM));
@@ -119,7 +119,7 @@ void dlTaskCommSendSysQueryResp(uint16_t rdrClass, uint16_t hwModel, uint16_t hw
 void dlTaskCommSendRdrFailure(char *str) {
     DeadcomCRPM *m = chGuardedPoolAllocTimeout(&out_pool, TIME_INFINITE);
     if (m == NULL) {
-        chSysHalt("null from inifinitely waiting guarded pool");
+        chSysHalt("null from infinitely waiting guarded pool");
         return;
     }
     memset(m, 0, sizeof(DeadcomCRPM));
@@ -131,14 +131,13 @@ void dlTaskCommSendRdrFailure(char *str) {
 void dlTaskCommSendAM0GotUids(dl_picc_uid *uids, size_t uids_len) {
     DeadcomCRPM *m = chGuardedPoolAllocTimeout(&out_pool, TIME_INFINITE);
     if (m == NULL) {
-        chSysHalt("null from inifinitely waiting guarded pool");
+        chSysHalt("null from infinitely waiting guarded pool");
         return;
     }
     memset(m, 0, sizeof(DeadcomCRPM));
     m->type = DCRCP_CRPM_AM0_PICC_UID_OBTAINED;
     m->data.authMethod0UuidObtained.len = uids_len;
-    size_t i;
-    for (i = 0; i < uids_len; i++) {
+    for (size_t i = 0; i < uids_len; i++) {
         m->data.authMethod0UuidObtained.vals[i].uid_len = uids[i].uid_len;
         memcpy(m->data.authMethod0UuidObtained.vals[i].uid, uids[i].uid, uids[i].uid_len);
     }
